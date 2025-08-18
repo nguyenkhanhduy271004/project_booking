@@ -1,0 +1,126 @@
+package com.booking.booking.service.impl;
+
+import com.booking.booking.common.UserType;
+import com.booking.booking.controller.request.VoucherCreateRequest;
+import com.booking.booking.controller.request.VoucherUpdateRequest;
+import com.booking.booking.exception.BadRequestException;
+import com.booking.booking.exception.ResourceNotFoundException;
+import com.booking.booking.model.Hotel;
+import com.booking.booking.model.User;
+import com.booking.booking.model.Voucher;
+import com.booking.booking.repository.HotelRepository;
+import com.booking.booking.repository.VoucherRepository;
+import com.booking.booking.service.VoucherService;
+import com.booking.booking.util.UserContext;
+import java.time.Instant;
+import java.util.Date;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j(topic = "VOUCHER-SERVICE")
+public class VoucherServiceImpl implements VoucherService {
+
+  private final VoucherRepository voucherRepository;
+  private final UserContext userContext;
+  private final HotelRepository hotelRepository;
+
+  @Override
+  public void createVoucher(VoucherCreateRequest request) {
+    User user = userContext.getCurrentUser();
+    Hotel hotel = hotelRepository.findById(request.getHotelId()).orElse(null);
+
+    if (hotel == null || hotel.getManagedByUser() == null) {
+      throw new BadRequestException("Hotel information is missing.");
+    }
+
+    if (!UserType.ADMIN.equals(user.getType()) &&
+        !user.getId().equals(hotel.getManagedByUser().getId())) {
+
+      log.warn("User {} is not authorized to create voucher for hotel {}", user.getId(),
+          hotel.getId());
+      throw new BadRequestException("You are not authorized to create voucher for hotel");
+    }
+
+    Voucher voucher = new Voucher();
+    voucher.setVoucherCode(request.getVoucherCode());
+    voucher.setVoucherName(request.getVoucherName());
+    voucher.setQuantity(request.getQuantity());
+    voucher.setPercentDiscount(request.getPercentDiscount());
+    voucher.setPriceCondition(request.getPriceCondition());
+    voucher.setExpiredDate(request.getExpiredDate());
+    voucher.setStatus(request.getStatus());
+    voucher.setHotel(hotel);
+    voucher.setCreatedAt(Date.from(Instant.now()));
+
+    voucherRepository.save(voucher);
+  }
+
+  @Override
+  public void updateVoucher(Long id, VoucherUpdateRequest request) {
+
+    Voucher existVoucher = voucherRepository.findById(id)
+        .orElseThrow(
+            () -> new ResourceNotFoundException("Voucher not found with id: " + id));
+    User user = userContext.getCurrentUser();
+    Hotel hotel = existVoucher.getHotel();
+
+    if (!UserType.ADMIN.equals(user.getType()) &&
+        !user.getId().equals(hotel.getManagedByUser().getId())) {
+      throw new BadRequestException("You are not authorized to update this voucher");
+    }
+
+    // Verify if hotel ID in request matches the existing voucher's hotel
+    if (!request.getHotelId().equals(hotel.getId())) {
+      throw new BadRequestException("Cannot change hotel for existing voucher");
+    }
+
+    existVoucher.setVoucherCode(request.getVoucherCode());
+    existVoucher.setVoucherName(request.getVoucherName());
+    existVoucher.setQuantity(request.getQuantity());
+    existVoucher.setPercentDiscount(request.getPercentDiscount());
+    existVoucher.setPriceCondition(request.getPriceCondition());
+    existVoucher.setExpiredDate(request.getExpiredDate());
+    existVoucher.setStatus(request.getStatus());
+    existVoucher.setUpdatedAt(Date.from(Instant.now()));
+
+    voucherRepository.save(existVoucher);
+  }
+
+  @Override
+  public void deleteVoucher(Long id) {
+    Voucher existVoucher = voucherRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Voucher not found with id: " + id));
+    User user = userContext.getCurrentUser();
+    Hotel hotel = existVoucher.getHotel();
+
+    if (!UserType.ADMIN.equals(user.getType()) &&
+        !user.getId().equals(hotel.getManagedByUser().getId())) {
+      throw new BadRequestException("You are not authorized to delete this voucher");
+    }
+    voucherRepository.deleteById(existVoucher.getId());
+  }
+
+  @Override
+  public Page<Voucher> getAllVouchers(Pageable pageable) {
+    return voucherRepository.findAll(pageable);
+  }
+
+  @Override
+  public Voucher getVoucherById(Long id) {
+    return voucherRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Voucher not found with id: " + id));
+  }
+
+  @Override
+  public Voucher getVoucherByHotelId(Long hotelId) {
+    return voucherRepository.findByHotel_Id(hotelId)
+        .orElseThrow(
+            () -> new ResourceNotFoundException("Voucher not found with hotel id: " + hotelId));
+  }
+
+}
