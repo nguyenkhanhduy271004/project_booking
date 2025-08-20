@@ -9,12 +9,14 @@ import com.booking.booking.mapper.RoomMapper;
 import com.booking.booking.model.Booking;
 import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Room;
+import com.booking.booking.model.User;
 import com.booking.booking.repository.BookingRepository;
 import com.booking.booking.repository.HotelRepository;
 import com.booking.booking.repository.RoomRepository;
 import com.booking.booking.service.CloudinaryService;
 import com.booking.booking.service.RoomService;
 import com.booking.booking.util.UserContext;
+import com.booking.booking.util.AuthorizationUtils;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -39,6 +41,7 @@ public class RoomServiceImpl implements RoomService {
 
   private final RoomMapper roomMapper;
   private final UserContext userContext;
+  private final AuthorizationUtils authorizationUtils;
   private final RoomRepository roomRepository;
   private final BookingRepository bookingRepository;
   private final HotelRepository hotelRepository;
@@ -366,6 +369,63 @@ public class RoomServiceImpl implements RoomService {
       }
     }
     return true;
+  }
+
+  /**
+   * Lấy danh sách room với phân quyền
+   * - System Admin & Admin: Xem tất cả
+   * - Manager: Chỉ xem room thuộc hotel mình quản lý
+   * - Staff: Chỉ xem room thuộc hotel mình làm việc
+   * - Guest: Không xem được
+   */
+  @Override
+  public Page<RoomResponse> getAllRoomsWithAuthorization(Pageable pageable, boolean deleted) {
+    User currentUser = authorizationUtils.getCurrentUser();
+
+    if (authorizationUtils.canAccessAllData()) {
+      // System Admin and Admin can see all rooms
+      return getAllRoomsWithHotelName(pageable, deleted);
+    } else if (authorizationUtils.isManager()) {
+      // Manager can only see rooms from hotels they manage
+      Page<Room> rooms = deleted
+          ? roomRepository.findAllByHotelManagedByUserAndIsDeletedTrue(currentUser, pageable)
+          : roomRepository.findAllByHotelManagedByUserAndIsDeletedFalse(currentUser, pageable);
+      return rooms.map(roomMapper::toRoomResponseDTO);
+    } else if (authorizationUtils.isStaff()) {
+      // Staff can only see rooms from hotels they work at
+      // For now, using the same logic as manager since we don't have staff-hotel
+      // relationship
+      Page<Room> rooms = deleted
+          ? roomRepository.findAllByHotelManagedByUserAndIsDeletedTrue(currentUser, pageable)
+          : roomRepository.findAllByHotelManagedByUserAndIsDeletedFalse(currentUser, pageable);
+      return rooms.map(roomMapper::toRoomResponseDTO);
+    } else {
+      // Guest or other roles - return empty page
+      return Page.empty(pageable);
+    }
+  }
+
+  /**
+   * Lấy room theo ID với phân quyền
+   * - System Admin & Admin: Xem tất cả
+   * - Manager & Staff: Chỉ xem room thuộc hotel mình quản lý/làm việc
+   * - Guest: Không xem được
+   */
+  @Override
+  public Optional<RoomResponse> getRoomByIdWithAuthorization(Long id) {
+    User currentUser = authorizationUtils.getCurrentUser();
+
+    if (authorizationUtils.canAccessAllData()) {
+      // System Admin and Admin can see all rooms
+      return getRoomByIdWithHotelName(id);
+    } else if (authorizationUtils.isManager() || authorizationUtils.isStaff()) {
+      // Manager and Staff can only see rooms from hotels they manage/work at
+      Optional<Room> room = roomRepository.findByIdAndHotelManagedByUserAndIsDeletedFalse(id, currentUser);
+      return room.map(roomMapper::toRoomResponseDTO);
+    } else {
+      // Guest or other roles - return empty
+      return Optional.empty();
+    }
   }
 
 }

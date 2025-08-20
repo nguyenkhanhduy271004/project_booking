@@ -36,4 +36,25 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
                         org.springframework.data.domain.Pageable pageable);
 
         List<Room> findByHotelIdAndIsDeletedFalseAndAvailableTrue(Long hotelId);
+
+        // Methods for role-based filtering
+        @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.isDeleted = false")
+        org.springframework.data.domain.Page<Room> findAllByHotelManagedByUserAndIsDeletedFalse(
+                        @Param("managedByUser") com.booking.booking.model.User managedByUser,
+                        org.springframework.data.domain.Pageable pageable);
+
+        @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.isDeleted = true")
+        org.springframework.data.domain.Page<Room> findAllByHotelManagedByUserAndIsDeletedTrue(
+                        @Param("managedByUser") com.booking.booking.model.User managedByUser,
+                        org.springframework.data.domain.Pageable pageable);
+
+        @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.id = :id AND r.isDeleted = false")
+        Optional<Room> findByIdAndHotelManagedByUserAndIsDeletedFalse(
+                        @Param("id") Long id,
+                        @Param("managedByUser") com.booking.booking.model.User managedByUser);
+
+        @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.hotel.id = :hotelId AND r.isDeleted = false AND r.available = true")
+        List<Room> findByHotelIdAndManagedByUserAndIsDeletedFalseAndAvailableTrue(
+                        @Param("hotelId") Long hotelId,
+                        @Param("managedByUser") com.booking.booking.model.User managedByUser);
 }

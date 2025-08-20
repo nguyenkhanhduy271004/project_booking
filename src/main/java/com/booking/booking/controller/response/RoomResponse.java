@@ -30,7 +30,7 @@ public class RoomResponse {
     private Long hotelId;
     private String hotelName;
 
-    // Audit fields
+    // Audit fields - hiển thị tên đầy đủ của user
     private Date createdAt;
     private Date updatedAt;
     private String createdByUser;

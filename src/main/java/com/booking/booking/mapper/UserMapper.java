@@ -40,7 +40,6 @@ public class UserMapper {
     return date.toInstant().atZone(ZoneId.of(zoneId)).toLocalDate();
   }
 
-
   public UserResponse toUserResponse(User user) {
 
     UserResponse userResponse = modelMapper.map(user, UserResponse.class);
@@ -101,7 +100,6 @@ public class UserMapper {
     return newUser;
   }
 
-
   public User toUserEntity(UserUpdateRequest req, User existingUser) {
     if (req.getFirstName() != null) {
       existingUser.setFirstName(req.getFirstName());
@@ -128,6 +126,79 @@ public class UserMapper {
     return existingUser;
   }
 
+  public User toUserEntity(com.booking.booking.dto.UserDTO userDTO) {
+    User user = new User();
+    user.setUsername(userDTO.getUsername());
+    user.setFirstName(userDTO.getFirstName());
+    user.setLastName(userDTO.getLastName());
+    user.setEmail(userDTO.getEmail());
+    user.setPhone(userDTO.getPhone());
+
+    if (userDTO.getGender() != null) {
+      user.setGender(com.booking.booking.common.Gender.valueOf(userDTO.getGender()));
+    }
+
+    if (userDTO.getBirthday() != null) {
+      user.setBirthDay(parseDayOfBirth(userDTO.getBirthday()));
+    }
+
+    if (userDTO.getType() != null) {
+      user.setType(com.booking.booking.common.UserType.valueOf(userDTO.getType()));
+    }
+
+    if (userDTO.getPassword() != null) {
+      user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+    }
+
+    user.setStatus(com.booking.booking.common.UserStatus.NONE);
+
+    // Set role based on type
+    if (userDTO.getType() != null) {
+      Role role = roleRepository.findByName(userDTO.getType());
+      if (role == null) {
+        throw new BadRequestException("Invalid role: " + userDTO.getType());
+      }
+
+      com.booking.booking.model.UserHasRole userHasRole = new com.booking.booking.model.UserHasRole(user, role);
+      user.setRoles(new HashSet<>());
+      user.getRoles().add(userHasRole);
+    }
+
+    return user;
+  }
+
+  public void updateUserFromDTO(User existingUser, com.booking.booking.dto.UserDTO userDTO) {
+    if (userDTO.getFirstName() != null) {
+      existingUser.setFirstName(userDTO.getFirstName());
+    }
+    if (userDTO.getLastName() != null) {
+      existingUser.setLastName(userDTO.getLastName());
+    }
+    if (userDTO.getEmail() != null) {
+      existingUser.setEmail(userDTO.getEmail());
+    }
+    if (userDTO.getPhone() != null) {
+      existingUser.setPhone(userDTO.getPhone());
+    }
+    if (userDTO.getGender() != null) {
+      existingUser.setGender(com.booking.booking.common.Gender.valueOf(userDTO.getGender()));
+    }
+    if (userDTO.getBirthday() != null) {
+      existingUser.setBirthDay(parseDayOfBirth(userDTO.getBirthday()));
+    }
+    if (userDTO.getType() != null) {
+      existingUser.setType(com.booking.booking.common.UserType.valueOf(userDTO.getType()));
+
+      // Update role
+      Role role = roleRepository.findByName(userDTO.getType());
+      if (role != null) {
+        existingUser.getRoles().clear();
+        com.booking.booking.model.UserHasRole userHasRole = new com.booking.booking.model.UserHasRole(existingUser,
+            role);
+        existingUser.getRoles().add(userHasRole);
+      }
+    }
+  }
 
   private Date parseDayOfBirth(String birthDay) {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");

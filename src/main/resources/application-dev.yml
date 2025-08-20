@@ -72,8 +72,8 @@ cloudinary:
   api_secret: Yj5APAWn75a7Jz6EmG9pCNuLUPM
 
 redis:
-  host: ${REDIS_HOST:redis}
-  port: ${REDIS_PORT:6379}
+  host: localhost
+  port: 6379
 
 booking:
   expiry:

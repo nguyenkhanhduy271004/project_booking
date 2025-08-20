@@ -5,13 +5,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import java.io.Serializable;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 @Getter
+@Setter
 @ToString
 public class UserUpdateRequest implements Serializable {
 
-  @NotNull(message = "User ID is required")
   private Long id;
 
   private String firstName;

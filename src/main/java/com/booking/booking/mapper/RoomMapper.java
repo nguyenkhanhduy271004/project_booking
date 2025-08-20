@@ -40,8 +40,12 @@ public class RoomMapper {
         .hotelName(room.getHotel() != null ? room.getHotel().getName() : null)
         .createdAt(room.getCreatedAt())
         .updatedAt(room.getUpdatedAt())
-        .createdByUser(room.getCreatedByUser() != null ? room.getCreatedByUser().getUsername() : null)
-        .updatedByUser(room.getUpdatedByUser() != null ? room.getUpdatedByUser().getUsername() : null)
+        .createdByUser(room.getCreatedByUser() != null
+            ? room.getCreatedByUser().getFirstName() + " " + room.getCreatedByUser().getLastName()
+            : null)
+        .updatedByUser(room.getUpdatedByUser() != null
+            ? room.getUpdatedByUser().getFirstName() + " " + room.getUpdatedByUser().getLastName()
+            : null)
         .build();
   }
 }

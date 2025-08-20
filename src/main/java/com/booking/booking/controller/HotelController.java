@@ -41,16 +41,19 @@ public class HotelController {
     private final HotelService hotelService;
     private final HotelMapper hotelMapper;
 
+    /**
+     * Lấy danh sách hotel cho guest - không có phân quyền
+     * Chỉ hiển thị hotel không bị xóa
+     */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public ResponseSuccess getAllHotels(
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
-            @RequestParam(defaultValue = "id", required = false) String sort,
-            @RequestParam(defaultValue = "false", required = false) boolean deleted) {
+            @RequestParam(defaultValue = "id", required = false) String sort) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
-        Page<HotelDTO> hotelPage = hotelService.getAllHotels(pageable, deleted)
+        Page<HotelDTO> hotelPage = hotelService.getAllHotels(pageable, false) // Chỉ lấy hotel không bị xóa
                 .map(hotelMapper::toDTO);
 
         PageResponse<?> response = PageResponse.builder()
@@ -74,6 +77,10 @@ public class HotelController {
                 hotelService.advanceSearchWithSpecification(pageable, hotel));
     }
 
+    /**
+     * Lấy hotel theo ID cho guest - không có phân quyền
+     * Chỉ hiển thị hotel không bị xóa
+     */
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseSuccess getHotelById(@PathVariable("id") Long id) {
@@ -83,6 +90,9 @@ public class HotelController {
                 .orElseThrow(() -> new RuntimeException("Hotel not found"));
     }
 
+    /**
+     * Lấy danh sách room của hotel cho guest
+     */
     @GetMapping("/{id}/rooms")
     @ResponseStatus(HttpStatus.OK)
     public ResponseSuccess getHotelRooms(@PathVariable("id") Long id) {

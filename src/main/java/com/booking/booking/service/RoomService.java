@@ -61,4 +61,9 @@ public interface RoomService {
   int getAvailableRoomCount(Long hotelId, LocalDate checkIn, LocalDate checkOut);
 
   boolean areRoomsAvailableForBooking(List<Long> roomIds, LocalDate checkIn, LocalDate checkOut);
+
+  // Role-based methods - Phân quyền cho Manager/Staff
+  Page<RoomResponse> getAllRoomsWithAuthorization(Pageable pageable, boolean deleted);
+
+  Optional<RoomResponse> getRoomByIdWithAuthorization(Long id);
 }

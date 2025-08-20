@@ -16,6 +16,7 @@ import com.booking.booking.repository.UserRepository;
 import com.booking.booking.service.CloudinaryService;
 import com.booking.booking.service.HotelService;
 import com.booking.booking.util.UserContext;
+import com.booking.booking.util.AuthorizationUtils;
 import com.google.gson.Gson;
 import jakarta.transaction.Transactional;
 import java.sql.Date;
@@ -39,6 +40,7 @@ public class HotelServiceImpl implements HotelService {
 
     private final Gson gson;
     private final UserContext userContext;
+    private final AuthorizationUtils authorizationUtils;
     private final HotelMapper hotelMapper;
     private final RoomRepository roomRepository;
     private final HotelRepository hotelRepository;
@@ -83,10 +85,9 @@ public class HotelServiceImpl implements HotelService {
         hotel.setCreatedAt(Date.valueOf(LocalDate.now()));
         hotel.setUpdatedAt(Date.valueOf(LocalDate.now()));
 
-
         User managedUser = userContext.getCurrentUser();
 
-        if(managedUser == null) {
+        if (managedUser == null) {
             throw new ResourceNotFoundException("User not found with id: " + hotelDTO.getManagerId());
         }
         hotel.setManagedByUser(managedUser);
@@ -102,7 +103,7 @@ public class HotelServiceImpl implements HotelService {
                 hotel.setImageUrl(imageUrl);
             } catch (Exception e) {
                 throw new BadRequestException(
-                    "Failed to upload image: " + imageHotel.getOriginalFilename());
+                        "Failed to upload image: " + imageHotel.getOriginalFilename());
             }
         }
 
@@ -138,7 +139,7 @@ public class HotelServiceImpl implements HotelService {
 
         User managedUser = userRepository.findByIdAndIsDeletedFalse(updatedHotel.getManagerId());
 
-        if(managedUser == null) {
+        if (managedUser == null) {
             throw new ResourceNotFoundException("User not found with id: " + updatedHotel.getManagerId());
         }
         hotel.setManagedByUser(managedUser);
@@ -318,6 +319,58 @@ public class HotelServiceImpl implements HotelService {
             roomRepository.deleteAll(roomRepository.findByHotelId(id));
             hotelRepository.delete(hotel);
         });
+    }
+
+    /**
+     * Lấy danh sách hotel với phân quyền
+     * - System Admin & Admin: Xem tất cả
+     * - Manager: Chỉ xem hotel mình quản lý
+     * - Staff: Chỉ xem hotel mình làm việc
+     * - Guest: Không xem được
+     */
+    @Override
+    public Page<Hotel> getAllHotelsWithAuthorization(Pageable pageable, boolean deleted) {
+        User currentUser = authorizationUtils.getCurrentUser();
+
+        if (authorizationUtils.canAccessAllData()) {
+            // System Admin and Admin can see all hotels
+            return getAllHotels(pageable, deleted);
+        } else if (authorizationUtils.isManager()) {
+            // Manager can only see hotels they manage
+            return deleted
+                    ? hotelRepository.findAllByManagedByUserAndIsDeletedTrue(currentUser, pageable)
+                    : hotelRepository.findAllByManagedByUserAndIsDeletedFalse(currentUser, pageable);
+        } else if (authorizationUtils.isStaff()) {
+            // Staff can only see hotels they work at (same as manager for now)
+            return deleted
+                    ? hotelRepository.findAllByManagedByUserAndIsDeletedTrue(currentUser, pageable)
+                    : hotelRepository.findAllByManagedByUserAndIsDeletedFalse(currentUser, pageable);
+        } else {
+            // Guest or other roles - return empty page
+            return Page.empty(pageable);
+        }
+    }
+
+    /**
+     * Lấy hotel theo ID với phân quyền
+     * - System Admin & Admin: Xem tất cả
+     * - Manager & Staff: Chỉ xem hotel mình quản lý/làm việc
+     * - Guest: Không xem được
+     */
+    @Override
+    public Optional<Hotel> getHotelByIdWithAuthorization(Long id) {
+        User currentUser = authorizationUtils.getCurrentUser();
+
+        if (authorizationUtils.canAccessAllData()) {
+            // System Admin and Admin can see all hotels
+            return getHotelById(id);
+        } else if (authorizationUtils.isManager() || authorizationUtils.isStaff()) {
+            // Manager and Staff can only see hotels they manage/work at
+            return hotelRepository.findByIdAndManagedByUserAndIsDeletedFalse(id, currentUser);
+        } else {
+            // Guest or other roles - return empty
+            return Optional.empty();
+        }
     }
 
 }

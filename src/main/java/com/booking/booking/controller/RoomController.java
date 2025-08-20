@@ -41,15 +41,18 @@ public class RoomController {
 
   private final RoomService roomService;
 
+  /**
+   * Lấy danh sách room cho guest - không có phân quyền
+   * Chỉ hiển thị room không bị xóa và available
+   */
   @GetMapping
   @ResponseStatus(HttpStatus.OK)
   public ResponseSuccess getAllRooms(
       @RequestParam(defaultValue = "0", required = false) int page,
       @RequestParam(defaultValue = "10", required = false) int size,
-      @RequestParam(defaultValue = "id", required = false) String sort,
-      @RequestParam(defaultValue = "false", required = false) boolean deleted) {
+      @RequestParam(defaultValue = "id", required = false) String sort) {
     Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
-    Page<RoomResponse> rooms = roomService.getAllRoomsWithHotelName(pageable, deleted);
+    Page<RoomResponse> rooms = roomService.getAllRoomsWithHotelName(pageable, false); // Chỉ lấy room không bị xóa
 
     PageResponse<?> response = PageResponse.builder()
         .pageNo(pageable.getPageNumber())
@@ -61,6 +64,10 @@ public class RoomController {
     return new ResponseSuccess(HttpStatus.OK, "Fetched room list successfully", response);
   }
 
+  /**
+   * Lấy room theo ID cho guest - không có phân quyền
+   * Chỉ hiển thị room không bị xóa
+   */
   @GetMapping("/{id}")
   @ResponseStatus(HttpStatus.OK)
   public ResponseSuccess getRoomById(@PathVariable("id") @Min(0) Long id) {
@@ -152,6 +159,9 @@ public class RoomController {
         java.util.Map.of("available", isAvailable));
   }
 
+  /**
+   * Lấy danh sách room available cho guest booking
+   */
   @GetMapping("/available")
   @ResponseStatus(HttpStatus.OK)
   public ResponseSuccess getAvailableRooms(
@@ -161,8 +171,7 @@ public class RoomController {
     LocalDate checkInDate = LocalDate.parse(checkIn);
     LocalDate checkOutDate = LocalDate.parse(checkOut);
 
-    List<RoomResponse> availableRooms = roomService.getAvailableRoomsWithHotelName(hotelId, checkInDate,
-        checkOutDate);
+    List<RoomResponse> availableRooms = roomService.getAvailableRoomsWithHotelName(hotelId, checkInDate, checkOutDate);
     return new ResponseSuccess(HttpStatus.OK, "Available rooms retrieved", availableRooms);
   }
 

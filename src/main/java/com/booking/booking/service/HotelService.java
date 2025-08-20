@@ -42,4 +42,9 @@ public interface HotelService {
     void deleteHotelPermanently(Long id);
 
     void deleteHotelsPermanently(List<Long> ids);
+
+    // Role-based methods - Phân quyền cho Manager/Staff
+    Page<Hotel> getAllHotelsWithAuthorization(Pageable pageable, boolean deleted);
+
+    Optional<Hotel> getHotelByIdWithAuthorization(Long id);
 }
