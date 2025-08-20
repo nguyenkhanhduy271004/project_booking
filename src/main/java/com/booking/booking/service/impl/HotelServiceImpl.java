@@ -137,7 +137,7 @@ public class HotelServiceImpl implements HotelService {
         updateFields(hotel, updatedHotel);
         hotel.setUpdatedAt(Date.valueOf(LocalDate.now()));
 
-        User managedUser = userRepository.findByIdAndIsDeletedFalse(updatedHotel.getManagerId());
+        User managedUser = userContext.getCurrentUser();
 
         if (managedUser == null) {
             throw new ResourceNotFoundException("User not found with id: " + updatedHotel.getManagerId());
