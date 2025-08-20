@@ -1,6 +1,7 @@
 package com.booking.booking.service.impl;
 
 import com.booking.booking.dto.RoomDTO;
+import com.booking.booking.controller.response.RoomResponse;
 import com.booking.booking.exception.InvalidRoomIdsException;
 import com.booking.booking.exception.BadRequestException;
 import com.booking.booking.exception.ResourceNotFoundException;
@@ -62,6 +63,19 @@ public class RoomServiceImpl implements RoomService {
   }
 
   @Override
+  public Page<RoomResponse> getAllRoomsWithHotelName(Pageable pageable, boolean deleted) {
+    Page<Room> rooms = deleted ? roomRepository.findAllByIsDeletedTrue(pageable)
+        : roomRepository.findAllByIsDeletedFalse(pageable);
+    return rooms.map(roomMapper::toRoomResponseDTO);
+  }
+
+  @Override
+  public Optional<RoomResponse> getRoomByIdWithHotelName(Long id) {
+    return roomRepository.findByIdAndIsDeletedFalse(id)
+        .map(roomMapper::toRoomResponseDTO);
+  }
+
+  @Override
   public Room createRoom(RoomDTO room, MultipartFile[] imagesRoom) {
 
     Hotel existHotel = hotelRepository.findById(room.getHotelId()).orElseThrow(
@@ -90,6 +104,12 @@ public class RoomServiceImpl implements RoomService {
     roomEntity.setCreatedByUser(userContext.getCurrentUser());
 
     return roomRepository.save(roomEntity);
+  }
+
+  @Override
+  public RoomResponse createRoomWithHotelName(RoomDTO room, MultipartFile[] imagesRoom) {
+    Room createdRoom = createRoom(room, imagesRoom);
+    return roomMapper.toRoomResponseDTO(createdRoom);
   }
 
   @Override
@@ -131,6 +151,13 @@ public class RoomServiceImpl implements RoomService {
     }
 
     return roomRepository.save(room);
+  }
+
+  @Override
+  public RoomResponse updateRoomWithHotelName(Long id, RoomDTO updatedRoom, MultipartFile[] images)
+      throws ResourceNotFoundException {
+    Room updatedRoomEntity = updateRoom(id, updatedRoom, images);
+    return roomMapper.toRoomResponseDTO(updatedRoomEntity);
   }
 
   private String extractPublicIdFromUrl(String imageUrl) {
@@ -287,6 +314,14 @@ public class RoomServiceImpl implements RoomService {
 
     return allRooms.stream()
         .filter(room -> !unavailableRoomIds.contains(room.getId()))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<RoomResponse> getAvailableRoomsWithHotelName(Long hotelId, LocalDate checkIn, LocalDate checkOut) {
+    List<Room> availableRooms = getAvailableRooms(hotelId, checkIn, checkOut);
+    return availableRooms.stream()
+        .map(roomMapper::toRoomResponseDTO)
         .collect(Collectors.toList());
   }
 

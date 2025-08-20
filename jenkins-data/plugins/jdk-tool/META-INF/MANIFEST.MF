@@ -1,0 +1,26 @@
+Manifest-Version: 1.0
+Created-By: Maven Archiver 3.6.0
+Build-Jdk-Spec: 17
+Specification-Title: Oracle Java SE Development Kit Installer Plugin
+Specification-Version: 0.0
+Implementation-Title: Oracle Java SE Development Kit Installer Plugin
+Implementation-Version: 83.v417146707a_3d
+Group-Id: org.jenkins-ci.plugins
+Artifact-Id: jdk-tool
+Short-Name: jdk-tool
+Long-Name: Oracle Java SE Development Kit Installer Plugin
+Url: https://github.com/jenkinsci/jdk-tool-plugin
+Plugin-Version: 83.v417146707a_3d
+Hudson-Version: 2.479.1
+Jenkins-Version: 2.479.1
+Plugin-Dependencies: apache-httpcomponents-client-4-api:4.5.14-208.v4383
+ 51942757
+Plugin-Developers: 
+Plugin-License-Name: MIT License
+Plugin-License-Url: https://opensource.org/licenses/MIT
+Plugin-ScmConnection: scm:git:https://github.com/jenkinsci/jdk-tool-plug
+ in.git
+Plugin-ScmTag: 417146707a3d1e56519056cdcd695a4953152a51
+Plugin-ScmUrl: https://github.com/jenkinsci/jdk-tool-plugin
+Implementation-Build: 417146707a3d1e56519056cdcd695a4953152a51
+

@@ -1,6 +1,7 @@
 package com.booking.booking.service;
 
 import com.booking.booking.dto.RoomDTO;
+import com.booking.booking.controller.response.RoomResponse;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.model.Room;
 import java.time.LocalDate;
@@ -16,11 +17,20 @@ public interface RoomService {
 
   Page<Room> getAllRooms(Pageable pageable, boolean deleted);
 
+  Page<RoomResponse> getAllRoomsWithHotelName(Pageable pageable, boolean deleted);
+
   Optional<Room> getRoomById(Long id);
+
+  Optional<RoomResponse> getRoomByIdWithHotelName(Long id);
 
   Room createRoom(RoomDTO room, MultipartFile[] imagesRoom);
 
+  RoomResponse createRoomWithHotelName(RoomDTO room, MultipartFile[] imagesRoom);
+
   Room updateRoom(Long id, RoomDTO updatedRoom, MultipartFile[] images) throws ResourceNotFoundException;
+
+  RoomResponse updateRoomWithHotelName(Long id, RoomDTO updatedRoom, MultipartFile[] images)
+      throws ResourceNotFoundException;
 
   void deleteRoom(Long id);
 
@@ -41,6 +51,8 @@ public interface RoomService {
   boolean isRoomAvailable(Long roomId, LocalDate checkIn, LocalDate checkOut);
 
   List<Room> getAvailableRooms(Long hotelId, LocalDate checkIn, LocalDate checkOut);
+
+  List<RoomResponse> getAvailableRoomsWithHotelName(Long hotelId, LocalDate checkIn, LocalDate checkOut);
 
   List<LocalDate> getUnavailableDates(Long roomId, LocalDate from, LocalDate to);
 

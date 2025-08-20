@@ -83,19 +83,8 @@ public class HotelServiceImpl implements HotelService {
         hotel.setCreatedAt(Date.valueOf(LocalDate.now()));
         hotel.setUpdatedAt(Date.valueOf(LocalDate.now()));
 
-        if (imageHotel != null && !imageHotel.isEmpty()) {
-            try {
-                Map<String, Object> data = this.cloudinaryService.upload(imageHotel);
-                String imageUrl = (String) data.get("secure_url");
-                log.info(imageUrl);
-                hotel.setImageUrl(imageUrl);
-            } catch (Exception e) {
-                throw new BadRequestException(
-                        "Failed to upload image: " + imageHotel.getOriginalFilename());
-            }
-        }
 
-        User managedUser = userRepository.findByIdAndIsDeletedFalse(hotelDTO.getManagerId());
+        User managedUser = userContext.getCurrentUser();
 
         if(managedUser == null) {
             throw new ResourceNotFoundException("User not found with id: " + hotelDTO.getManagerId());
@@ -104,6 +93,18 @@ public class HotelServiceImpl implements HotelService {
 
         User createdUser = userContext.getCurrentUser();
         hotel.setCreatedByUser(createdUser);
+
+        if (imageHotel != null && !imageHotel.isEmpty()) {
+            try {
+                Map<String, Object> data = this.cloudinaryService.upload(imageHotel);
+                String imageUrl = (String) data.get("secure_url");
+                log.info(imageUrl);
+                hotel.setImageUrl(imageUrl);
+            } catch (Exception e) {
+                throw new BadRequestException(
+                    "Failed to upload image: " + imageHotel.getOriginalFilename());
+            }
+        }
 
         return hotelRepository.save(hotel);
     }

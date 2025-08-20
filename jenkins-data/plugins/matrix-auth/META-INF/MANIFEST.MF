@@ -1,0 +1,29 @@
+Manifest-Version: 1.0
+Created-By: Maven Archiver 3.6.3
+Build-Jdk-Spec: 17
+Specification-Title: Matrix Authorization Strategy Plugin
+Specification-Version: 3.2
+Implementation-Title: Matrix Authorization Strategy Plugin
+Implementation-Version: 3.2.7
+Group-Id: org.jenkins-ci.plugins
+Artifact-Id: matrix-auth
+Short-Name: matrix-auth
+Long-Name: Matrix Authorization Strategy Plugin
+Url: https://github.com/jenkinsci/matrix-auth-plugin
+Compatible-Since-Version: 3.2
+Plugin-Version: 3.2.7
+Hudson-Version: 2.479.3
+Jenkins-Version: 2.479.3
+Plugin-Dependencies: commons-lang3-api:3.18.0-98.v3a_674c06072d,ionicons
+ -api:88.va_4187cb_eddf1,configuration-as-code:1963.v24e046127a_3f;resol
+ ution:=optional,cloudbees-folder:6.1026.ve06dfa_cf31c3;resolution:=opti
+ onal
+Plugin-Developers: 
+Plugin-License-Name: MIT
+Plugin-License-Url: https://opensource.org/licenses/MIT
+Plugin-ScmConnection: scm:git:https://github.com/jenkinsci/matrix-auth-p
+ lugin.git
+Plugin-ScmTag: matrix-auth-3.2.7
+Plugin-ScmUrl: https://github.com/jenkinsci/matrix-auth-plugin
+Implementation-Build: d031b03e78a9b52156c79981214399bd70d45660
+

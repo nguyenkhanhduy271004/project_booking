@@ -1,0 +1,13 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<fingerprint>
+  <timestamp>2025-08-19 07:53:03.876 UTC</timestamp>
+  <md5sum>5e72900dc385f71182aab3f697852fa0</md5sum>
+  <fileName>Credential id=GitHub name=nguyenkhanhduy271004/****** (GitHub account)</fileName>
+  <usages>
+    <entry>
+      <string>BackendBookingApp</string>
+      <ranges>2-8</ranges>
+    </entry>
+  </usages>
+  <facets/>
+</fingerprint>

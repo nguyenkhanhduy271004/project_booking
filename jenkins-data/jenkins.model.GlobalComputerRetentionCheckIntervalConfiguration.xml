@@ -1,0 +1,4 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<jenkins.model.GlobalComputerRetentionCheckIntervalConfiguration>
+  <computerRetentionCheckInterval>60</computerRetentionCheckInterval>
+</jenkins.model.GlobalComputerRetentionCheckIntervalConfiguration>

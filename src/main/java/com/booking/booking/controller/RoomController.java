@@ -3,8 +3,8 @@ package com.booking.booking.controller;
 import com.booking.booking.controller.response.PageResponse;
 import com.booking.booking.controller.response.ResponseSuccess;
 import com.booking.booking.dto.RoomDTO;
+import com.booking.booking.controller.response.RoomResponse;
 import com.booking.booking.exception.ResourceNotFoundException;
-import com.booking.booking.model.Room;
 import com.booking.booking.service.RoomService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -49,7 +49,7 @@ public class RoomController {
       @RequestParam(defaultValue = "id", required = false) String sort,
       @RequestParam(defaultValue = "false", required = false) boolean deleted) {
     Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
-    Page<Room> rooms = roomService.getAllRooms(pageable, deleted);
+    Page<RoomResponse> rooms = roomService.getAllRoomsWithHotelName(pageable, deleted);
 
     PageResponse<?> response = PageResponse.builder()
         .pageNo(pageable.getPageNumber())
@@ -64,7 +64,7 @@ public class RoomController {
   @GetMapping("/{id}")
   @ResponseStatus(HttpStatus.OK)
   public ResponseSuccess getRoomById(@PathVariable("id") @Min(0) Long id) {
-    return roomService.getRoomById(id)
+    return roomService.getRoomByIdWithHotelName(id)
         .map(room -> new ResponseSuccess(HttpStatus.OK, "Room found", room))
         .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
   }
@@ -75,7 +75,7 @@ public class RoomController {
   public ResponseSuccess createRoom(
       @RequestPart(value = "room") @Valid RoomDTO room,
       @RequestPart(value = "images", required = false) MultipartFile[] images) {
-    Room created = roomService.createRoom(room, images);
+    RoomResponse created = roomService.createRoomWithHotelName(room, images);
     return new ResponseSuccess(HttpStatus.CREATED, "Room created successfully", created);
   }
 
@@ -86,7 +86,7 @@ public class RoomController {
       @PathVariable("id") @Min(0) Long id,
       @Valid @RequestPart RoomDTO room,
       @RequestPart(value = "images", required = false) MultipartFile[] images) {
-    Room updated = roomService.updateRoom(id, room, images);
+    RoomResponse updated = roomService.updateRoomWithHotelName(id, room, images);
     return new ResponseSuccess(HttpStatus.OK, "Room updated successfully", updated);
   }
 
@@ -161,7 +161,8 @@ public class RoomController {
     LocalDate checkInDate = LocalDate.parse(checkIn);
     LocalDate checkOutDate = LocalDate.parse(checkOut);
 
-    List<Room> availableRooms = roomService.getAvailableRooms(hotelId, checkInDate, checkOutDate);
+    List<RoomResponse> availableRooms = roomService.getAvailableRoomsWithHotelName(hotelId, checkInDate,
+        checkOutDate);
     return new ResponseSuccess(HttpStatus.OK, "Available rooms retrieved", availableRooms);
   }
 

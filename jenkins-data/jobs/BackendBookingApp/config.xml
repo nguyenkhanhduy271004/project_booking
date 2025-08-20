@@ -1,0 +1,117 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1540.v295eccc9778f">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2265.v140e610fe9d5"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2265.v140e610fe9d5">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.SCMTrigger>
+          <spec>* * * * *</spec>
+          <ignorePostCommitHooks>false</ignorePostCommitHooks>
+        </hudson.triggers.SCMTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@4183.v94b_6fd39da_c1">
+    <script>pipeline {
+    agent any
+    tools {
+        maven &apos;MAVEN&apos;
+    }
+    environment {
+        APP_NAME = &quot;backend-service&quot;
+        RELEASE = &quot;1.0.0&quot;
+        DOCKER_USER = &quot;nguyenduy271004&quot;
+        DOCKER_PASS = &apos;kuy27171004&apos;
+        IMAGE_NAME = &quot;${DOCKER_USER}/${APP_NAME}&quot;
+        IMAGE_TAG = &quot;${RELEASE}-${BUILD_NUMBER}&quot;
+    }
+    stages {
+        stage (&apos;Clean workspace&apos;) {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage(&quot;Checkout from SCM&quot;) {
+            steps {
+                git branch: &apos;main&apos;, credentialsId: &apos;GitHub&apos;, url: &apos;https://github.com/nguyenkhanhduy271004/project_booking&apos;
+            }
+        }
+
+        stage(&quot;Build Application&quot;) {
+            steps {
+                sh &quot;mvn clean package&quot;
+            }
+        }
+
+        stage(&quot;Test Application&quot;) {
+            steps {
+                sh &quot;mvn test&quot;
+            }
+        }
+
+        stage(&quot;Sonarqube Analysis&quot;) {
+            steps {
+                script {
+                    withSonarQubeEnv(credentialsId: &apos;sonarQube&apos;) {
+                        sh &quot;mvn sonar:sonar&quot;
+                    }
+                }
+            }
+        }
+
+        // Nếu đã cấu hình Quality Gate ID thì bỏ comment:
+        // stage(&quot;Quality Gate&quot;) {
+        //     steps {
+        //         script {
+        //             waitForQualityGate abortPipeline: false, credentialsId: &apos;sonarQube&apos;
+        //         }
+        //     }
+        // }
+
+        stage(&quot;Build &amp; Push Docker Image&quot;) {
+            steps {
+                script {
+                        docker_image = docker.build(&quot;${IMAGE_NAME}&quot;)
+                        docker.withRegistry(&apos;&apos;, &apos;Dockerhub&apos;) {
+                            docker_image.push(&quot;${IMAGE_TAG}&quot;)
+                            docker_image.push(&apos;latest&apos;)
+                    }
+                }
+            }
+        }
+        stage(&quot;Trivy Scan&quot;) {
+            steps {
+                script {
+                    sh &apos;&apos;&apos;
+                        docker run \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy image ${IMAGE_NAME}:latest \
+                        --no-progress \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL \
+                        --format table \
+                        --timeout 10m \
+                        --exit-code 0
+                    &apos;&apos;&apos;
+                }
+            }
+        }
+    }
+}
+</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

@@ -140,17 +140,16 @@ services:
 
   jenkins:
     image: jenkins/jenkins:lts
-    privileged: true
-    user: root
-    ports:
-      - '7080:8080'
-      - '50000:50000'
     container_name: jenkins
+    user: root
+    privileged: true
+    ports:
+      - "7080:8080"
+      - "50000:50000"
     volumes:
-      - ~/jenkins-data:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/local/bin/docker:/usr/local/bin/docker
-      - "C:/Program Files/Java/jdk-17:/opt/jdk-17"
+      - ./jenkins-data:/var/jenkins_home
+      - //var/run/docker.sock:/var/run/docker.sock
+      - "/c/Program Files/Java/jdk-17:/opt/jdk-17"
 
 
   grafana:
