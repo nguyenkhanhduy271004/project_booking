@@ -1,2 +1,0 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<l:dependencies xmlns:l='licenses' groupId='org.jenkins-ci.plugins' artifactId='sonar-quality-gates' version='352.vdcdb_d7994fb_6'><l:dependency name='Sonar Quality Gates Plugin' groupId='org.jenkins-ci.plugins' artifactId='sonar-quality-gates' version='352.vdcdb_d7994fb_6' url='https://github.com/jenkinsci/sonar-quality-gates-plugin'><l:description>The Jenkins Plugins Parent POM Project</l:description><l:license name='MIT License' url='https://opensource.org/license/mit/'/></l:dependency></l:dependencies>
