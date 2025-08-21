@@ -9,5 +9,6 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 
   Optional<Voucher> findById(Long voucherId);
   Optional<Voucher> findByHotel_Id(Long voucherId);
+  boolean existsByVoucherCode(String voucherCode);
 
 }

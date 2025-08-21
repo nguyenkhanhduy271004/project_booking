@@ -50,8 +50,8 @@ public class VoucherServiceImpl implements VoucherService {
       }
     }
 
-    if (hotel == null) {
-      throw new BadRequestException("Hotel information is missing.");
+    if (voucherRepository.existsByVoucherCode(request.getVoucherCode())) {
+      throw new BadRequestException("Voucher code already exists");
     }
 
     Voucher voucher = new Voucher();
@@ -82,9 +82,13 @@ public class VoucherServiceImpl implements VoucherService {
       throw new BadRequestException("You are not authorized to update this voucher");
     }
 
-    // Verify if hotel ID in request matches the existing voucher's hotel
     if (!request.getHotelId().equals(hotel.getId())) {
       throw new BadRequestException("Cannot change hotel for existing voucher");
+    }
+
+    if (!existVoucher.getVoucherCode().equals(request.getVoucherCode()) &&
+        voucherRepository.existsByVoucherCode(request.getVoucherCode())) {
+      throw new BadRequestException("Voucher code already exists");
     }
 
     existVoucher.setVoucherCode(request.getVoucherCode());

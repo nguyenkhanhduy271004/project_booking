@@ -43,6 +43,5 @@ public class VoucherUpdateRequest {
     @NotNull(message = "Status is required")
     private VoucherStatus status;
 
-    @NotNull(message = "Hotel ID is required")
     private Long hotelId;
 }
