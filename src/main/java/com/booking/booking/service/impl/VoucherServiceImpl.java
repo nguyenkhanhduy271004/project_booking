@@ -82,9 +82,6 @@ public class VoucherServiceImpl implements VoucherService {
       throw new BadRequestException("You are not authorized to update this voucher");
     }
 
-    if (!request.getHotelId().equals(hotel.getId())) {
-      throw new BadRequestException("Cannot change hotel for existing voucher");
-    }
 
     if (!existVoucher.getVoucherCode().equals(request.getVoucherCode()) &&
         voucherRepository.existsByVoucherCode(request.getVoucherCode())) {
