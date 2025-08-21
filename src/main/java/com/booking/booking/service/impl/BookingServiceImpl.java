@@ -5,6 +5,7 @@ import com.booking.booking.common.UserType;
 import com.booking.booking.common.VoucherStatus;
 import com.booking.booking.controller.request.BookingRequest;
 import com.booking.booking.controller.response.BookingResponse;
+import com.booking.booking.dto.BookingNotificationDTO;
 import com.booking.booking.exception.AccessDeniedException;
 import com.booking.booking.exception.BadRequestException;
 import com.booking.booking.exception.InvalidBookingIdsException;
@@ -24,7 +25,6 @@ import com.booking.booking.service.BookingService;
 import com.booking.booking.util.UserContext;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -32,11 +32,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -45,6 +49,7 @@ import org.springframework.stereotype.Service;
 @Slf4j(topic = "Booking-Service")
 public class BookingServiceImpl implements BookingService {
 
+  private final SimpMessagingTemplate messagingTemplate;
   private final BookingRepository bookingRepository;
   private final VoucherRepository voucherRepository;
   private final HotelRepository hotelRepository;
@@ -58,74 +63,21 @@ public class BookingServiceImpl implements BookingService {
 
   public List<BookingResponse> createBooking(BookingRequest request) {
     User currentUser = userContext.getCurrentUser();
-
     Voucher voucher = voucherRepository.findById(request.getVoucherId()).orElse(null);
+    validateVoucher(voucher, request.getHotelId());
 
-    if (voucher == null ||
-        voucher.getQuantity() <= 0 ||
-        voucher.getExpiredDate().isBefore(LocalDate.now()) ||
-        !voucher.getHotel().getId().equals(request.getHotelId()) ||
-        voucher.getStatus().equals(VoucherStatus.EXPIRED)
-    ) {
-      throw new BadRequestException("Voucher is not valid!");
-    }
+    validateBookingDates(request.getCheckInDate(), request.getCheckOutDate());
 
-    if (request.getRoomIds() == null || request.getRoomIds().isEmpty()) {
-      throw new BadRequestException("Room IDs must not be empty");
-    }
-
-    if (request.getCheckOutDate().isBefore(request.getCheckInDate()) ||
-        request.getCheckOutDate().isEqual(request.getCheckInDate())) {
-      throw new BadRequestException("Check-out date must be after check-in date");
-    }
+    List<Room> rooms = validateAndFetchRooms(request.getRoomIds(), request.getHotelId());
+    validateRoomAvailability(rooms, request.getRoomIds(), request.getCheckInDate(),
+        request.getCheckOutDate());
 
     long nights = ChronoUnit.DAYS.between(request.getCheckInDate(), request.getCheckOutDate());
-    if (nights <= 0) {
-      throw new BadRequestException("Booking must be at least 1 night");
-    }
 
-    if (nights > 30) {
-      throw new BadRequestException("Booking period cannot exceed 30 days");
-    }
-
-    List<Room> rooms = roomRepository.findAllById(request.getRoomIds());
-    if (rooms.size() != request.getRoomIds().size()) {
-      java.util.Set<Long> foundIds = rooms.stream().map(Room::getId)
-          .collect(java.util.stream.Collectors.toSet());
-      List<Long> invalid = request.getRoomIds().stream().filter(id -> !foundIds.contains(id))
-          .toList();
-      throw new BadRequestException("Some room IDs are invalid: " + invalid);
-    }
-
-    for (Room room : rooms) {
-      if (!room.getHotel().getId().equals(request.getHotelId())) {
-        throw new BadRequestException(
-            "Room id " + room.getId() + " does not belong to hotel id " + request.getHotelId());
-      }
-      if (!room.isAvailable()) {
-        throw new BadRequestException("Room " + room.getId() + " is not available for booking");
-      }
-    }
-
-    List<Booking> conflictingBookings = bookingRepository.findConflictingBookings(
-        request.getRoomIds(), request.getCheckInDate(), request.getCheckOutDate());
-
-    if (!conflictingBookings.isEmpty()) {
-      List<Long> conflictRoomIds = conflictingBookings.stream()
-          .flatMap(booking -> booking.getRooms().stream())
-          .map(Room::getId)
-          .distinct()
-          .toList();
-      throw new BadRequestException(
-          "Some rooms are not available for the selected dates: " + conflictRoomIds);
-    }
-
-    BigDecimal pricePerNight = rooms.stream()
-        .map(Room::getPricePerNight)
-        .map(BigDecimal::valueOf)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal total = pricePerNight.multiply(BigDecimal.valueOf(nights));
+    BigDecimal total = rooms.stream()
+        .map(room -> BigDecimal.valueOf(room.getPricePerNight()))
+        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        .multiply(BigDecimal.valueOf(nights));
 
     if (total.compareTo(voucher.getPriceCondition()) < 0) {
       throw new BadRequestException("Voucher not eligible!");
@@ -133,28 +85,11 @@ public class BookingServiceImpl implements BookingService {
 
     BigDecimal discount = total.multiply(BigDecimal.valueOf(voucher.getPercentDiscount()))
         .divide(BigDecimal.valueOf(100));
-
     BigDecimal finalTotal = total.subtract(discount);
 
-    User guest;
-    if (currentUser.getType().equals(UserType.GUEST)) {
-      guest = currentUser;
-    } else {
-      if (request.getGuestId() == null) {
-        throw new BadRequestException("Guest ID must not be null for non-GUEST users");
-      }
-      guest = userRepository.findById(request.getGuestId())
-          .orElseThrow(() -> new ResourceNotFoundException(
-              "Guest not found with id: " + request.getGuestId()));
+    User guest = getBookingGuest(currentUser, request.getGuestId());
 
-      if (!guest.getType().equals(UserType.GUEST)) {
-        throw new BadRequestException(
-            "Specified user is not a guest. User type: " + guest.getType());
-      }
-    }
-
-    String bookingCode =
-        "BK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    String bookingCode = "BK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
     Booking booking = Booking.builder()
         .bookingCode(bookingCode)
@@ -172,8 +107,109 @@ public class BookingServiceImpl implements BookingService {
 
     Booking saved = bookingRepository.save(booking);
     BookingResponse response = bookingMapper.toBookingResponse(saved);
-    return java.util.List.of(response);
+
+    voucher.setQuantity(voucher.getQuantity() - 1);
+    voucherRepository.save(voucher);
+
+    BookingNotificationDTO dto = new BookingNotificationDTO(saved);
+    Long hotelId = saved.getHotel().getId();
+
+    if (currentUser.getType() == UserType.ADMIN || currentUser.getType() == UserType.SYSTEM_ADMIN) {
+      messagingTemplate.convertAndSend("/topic/booking/global", dto);
+    }
+
+    messagingTemplate.convertAndSend("/topic/booking/hotel/" + hotelId, dto);
+
+    return List.of(response);
   }
+
+  private void validateVoucher(Voucher voucher, Long hotelId) {
+    if (voucher == null ||
+        voucher.getQuantity() <= 0 ||
+        voucher.getExpiredDate().isBefore(LocalDate.now()) ||
+        !voucher.getHotel().getId().equals(hotelId) ||
+        voucher.getStatus().equals(VoucherStatus.EXPIRED)) {
+      throw new BadRequestException("Voucher is not valid!");
+    }
+  }
+
+  private void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
+    if (checkIn == null || checkOut == null || !checkOut.isAfter(checkIn)) {
+      throw new BadRequestException("Check-out date must be after check-in date");
+    }
+
+    long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
+    if (nights <= 0) {
+      throw new BadRequestException("Booking must be at least 1 night");
+    }
+    if (nights > 30) {
+      throw new BadRequestException("Booking period cannot exceed 30 days");
+    }
+  }
+
+  private List<Room> validateAndFetchRooms(List<Long> roomIds, Long hotelId) {
+    if (roomIds == null || roomIds.isEmpty()) {
+      throw new BadRequestException("Room IDs must not be empty");
+    }
+
+    List<Room> rooms = roomRepository.findAllById(roomIds);
+    if (rooms.size() != roomIds.size()) {
+      Set<Long> foundIds = rooms.stream().map(Room::getId).collect(Collectors.toSet());
+      List<Long> invalid = roomIds.stream().filter(id -> !foundIds.contains(id)).toList();
+      throw new BadRequestException("Some room IDs are invalid: " + invalid);
+    }
+
+    for (Room room : rooms) {
+      if (!room.getHotel().getId().equals(hotelId)) {
+        throw new BadRequestException(
+            "Room id " + room.getId() + " does not belong to hotel id " + hotelId);
+      }
+    }
+
+    return rooms;
+  }
+
+
+  private void validateRoomAvailability(List<Room> rooms, List<Long> roomIds, LocalDate checkIn,
+      LocalDate checkOut) {
+    for (Room room : rooms) {
+      if (!room.isAvailable()) {
+        throw new BadRequestException("Room " + room.getId() + " is not available for booking");
+      }
+    }
+
+    List<Booking> conflicting = bookingRepository.findConflictingBookings(roomIds, checkIn,
+        checkOut);
+    if (!conflicting.isEmpty()) {
+      List<Long> conflictRoomIds = conflicting.stream()
+          .flatMap(b -> b.getRooms().stream())
+          .map(Room::getId)
+          .distinct()
+          .toList();
+      throw new BadRequestException(
+          "Some rooms are not available for the selected dates: " + conflictRoomIds);
+    }
+  }
+
+  private User getBookingGuest(User currentUser, Long guestId) {
+    if (currentUser.getType() == UserType.GUEST) {
+      return currentUser;
+    }
+
+    if (guestId == null) {
+      throw new BadRequestException("Guest ID must not be null for non-GUEST users");
+    }
+
+    User guest = userRepository.findById(guestId)
+        .orElseThrow(() -> new ResourceNotFoundException("Guest not found with id: " + guestId));
+
+    if (guest.getType() != UserType.GUEST) {
+      throw new BadRequestException("Specified user is not a guest. User type: " + guest.getType());
+    }
+
+    return guest;
+  }
+
 
   public Page<BookingResponse> getAllBookings(Pageable pageable) {
     return bookingRepository.findAllByIsDeletedFalse(pageable)

@@ -22,7 +22,6 @@ public class RoomDTO {
 
   private boolean available;
 
-  @NotNull(message = "HotelId không được để trống")
   private Long hotelId;
 
   private List<String> listImageUrl = new ArrayList<>();

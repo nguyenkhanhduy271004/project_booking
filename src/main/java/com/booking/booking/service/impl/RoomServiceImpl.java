@@ -117,18 +117,15 @@ public class RoomServiceImpl implements RoomService {
 
   @Override
   public Room updateRoom(Long id, RoomDTO updatedRoom, MultipartFile[] images) {
-    Hotel hotel = hotelRepository.findById(updatedRoom.getHotelId())
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "Hotel not found with id: " + updatedRoom.getHotelId()));
 
     Room room = roomRepository.findByIdAndIsDeletedFalse(id)
-        .orElseThrow(() -> new RuntimeException("Room not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
+
 
     room.setTypeRoom(updatedRoom.getTypeRoom());
     room.setCapacity(updatedRoom.getCapacity());
     room.setPricePerNight(updatedRoom.getPricePerNight());
     room.setAvailable(updatedRoom.isAvailable());
-    room.setHotel(hotel);
     room.setUpdatedByUser(userContext.getCurrentUser());
 
     if (images != null && images.length > 0) {
