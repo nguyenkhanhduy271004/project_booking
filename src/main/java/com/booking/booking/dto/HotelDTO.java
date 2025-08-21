@@ -1,5 +1,6 @@
 package com.booking.booking.dto;
 
+import com.booking.booking.controller.response.UserResponse;
 import lombok.Data;
 
 @Data
@@ -11,5 +12,5 @@ public class HotelDTO {
     private int totalRooms;
     private double starRating;
     private String imageUrl;
-    private Long managerId;
+    private UserResponse managedBy;
 }

@@ -19,7 +19,7 @@ public interface HotelService {
 
     PageResponse<?> advanceSearchWithSpecification(Pageable pageable, String[] hotel);
 
-    Optional<Hotel> getHotelById(Long id) throws ResourceNotFoundException;
+    HotelDTO getHotelById(Long id) throws ResourceNotFoundException;
 
     List<Room> getRoomByHotelId(Long hotelId) throws ResourceNotFoundException;
 
