@@ -26,36 +26,44 @@ import org.springframework.stereotype.Service;
 public class VoucherServiceImpl implements VoucherService {
 
   private final VoucherRepository voucherRepository;
-  private final UserContext userContext;
   private final HotelRepository hotelRepository;
+  private final UserContext userContext;
+
 
   @Override
   public void createVoucher(VoucherCreateRequest request) {
     User user = userContext.getCurrentUser();
-    Hotel hotel = hotelRepository.findById(request.getHotelId()).orElse(null);
+    Hotel hotel;
 
-    if (hotel == null || hotel.getManagedByUser() == null) {
+    if (UserType.ADMIN.equals(user.getType())) {
+      hotel = hotelRepository.findById(request.getHotelId())
+          .orElseThrow(() -> new ResourceNotFoundException(
+              "Hotel not found with id: " + request.getHotelId()));
+    } else {
+      hotel = hotelRepository.findByManagedByUserAndIsDeletedFalse(user)
+          .orElseThrow(() -> new ResourceNotFoundException("Hotel not found for current user"));
+
+      if (!user.getId().equals(hotel.getManagedByUser().getId())) {
+        log.warn("User {} is not authorized to create voucher for hotel {}", user.getId(),
+            hotel.getId());
+        throw new BadRequestException("You are not authorized to create voucher for this hotel");
+      }
+    }
+
+    if (hotel == null) {
       throw new BadRequestException("Hotel information is missing.");
     }
 
-    if (!UserType.ADMIN.equals(user.getType()) &&
-        !user.getId().equals(hotel.getManagedByUser().getId())) {
-
-      log.warn("User {} is not authorized to create voucher for hotel {}", user.getId(),
-          hotel.getId());
-      throw new BadRequestException("You are not authorized to create voucher for hotel");
-    }
-
     Voucher voucher = new Voucher();
+    voucher.setHotel(hotel);
+    voucher.setStatus(request.getStatus());
+    voucher.setQuantity(request.getQuantity());
+    voucher.setCreatedAt(Date.from(Instant.now()));
     voucher.setVoucherCode(request.getVoucherCode());
     voucher.setVoucherName(request.getVoucherName());
-    voucher.setQuantity(request.getQuantity());
+    voucher.setExpiredDate(request.getExpiredDate());
     voucher.setPercentDiscount(request.getPercentDiscount());
     voucher.setPriceCondition(request.getPriceCondition());
-    voucher.setExpiredDate(request.getExpiredDate());
-    voucher.setStatus(request.getStatus());
-    voucher.setHotel(hotel);
-    voucher.setCreatedAt(Date.from(Instant.now()));
 
     voucherRepository.save(voucher);
   }

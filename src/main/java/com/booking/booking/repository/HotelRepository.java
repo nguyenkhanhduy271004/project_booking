@@ -1,6 +1,7 @@
 package com.booking.booking.repository;
 
 import com.booking.booking.model.Hotel;
+import com.booking.booking.model.User;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +45,8 @@ public interface HotelRepository extends JpaRepository<Hotel, Long>,
 
         List<Hotel> findAllByManagedByUserAndIsDeletedFalse(com.booking.booking.model.User managedByUser);
 
-        Optional<Hotel> findByIdAndManagedByUserAndIsDeletedFalse(Long id,
-                        com.booking.booking.model.User managedByUser);
+        Optional<Hotel> findByIdAndManagedByUserAndIsDeletedFalse(Long id, User managedByUser);
+
+        Optional<Hotel> findByManagedByUserAndIsDeletedFalse(User managedByUser);
+
 }
