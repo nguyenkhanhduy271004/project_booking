@@ -3,7 +3,9 @@ package com.booking.booking.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -29,35 +31,40 @@ import lombok.NoArgsConstructor;
 @Table(name = "tbl_hotel")
 public class Hotel extends AbstractEntity<Long> implements Serializable {
 
-    @Column(name = "name", nullable = false)
-    private String name;
-    private String district;
-    private String addressDetail;
-    private int totalRooms;
-    private double starRating;
-    private String imageUrl;
+  @Column(name = "name", nullable = false)
+  private String name;
+  private String district;
+  private String addressDetail;
+  private int totalRooms;
+  private double starRating;
+  private String imageUrl;
 
-    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    @Builder.Default
-    private List<Room> rooms = new ArrayList<>();
+  @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonIgnore
+  @Builder.Default
+  private List<Room> rooms = new ArrayList<>();
 
-    @ManyToOne
-    @JoinColumn(name = "created_by")
-    @JsonBackReference(value = "hotel-created-by")
-    private User createdByUser;
+  @ManyToOne
+  @JoinColumn(name = "created_by")
+  @JsonBackReference(value = "hotel-created-by")
+  private User createdByUser;
 
-    @ManyToOne
-    @JoinColumn(name = "updated_by")
-    @JsonBackReference(value = "hotel-updated-by")
-    private User updatedByUser;
+  @ManyToOne
+  @JoinColumn(name = "updated_by")
+  @JsonBackReference(value = "hotel-updated-by")
+  private User updatedByUser;
 
-    @ManyToOne
-    @JoinColumn(name = "managed_by")
-    @JsonBackReference(value = "hotel-managed-by")
-    private User managedByUser;
+  @ManyToOne
+  @JoinColumn(name = "managed_by")
+  @JsonBackReference(value = "hotel-managed-by")
+  private User managedByUser;
 
-    @OneToMany(mappedBy = "hotel")
-    private Set<Voucher> vouchers = new HashSet<>();
+  @OneToMany(mappedBy = "hotel")
+  private Set<Voucher> vouchers = new HashSet<>();
+
+  @ElementCollection
+  @CollectionTable(name = "hotel_services", joinColumns = @JoinColumn(name = "hotel_id"))
+  @Column(name = "service")
+  private List<String> services = new ArrayList<>();
 
 }

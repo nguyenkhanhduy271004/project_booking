@@ -92,6 +92,7 @@ public class HotelServiceImpl implements HotelService {
   @Override
   public Hotel createHotel(HotelDTO hotelDTO, MultipartFile imageHotel) {
     Hotel hotel = hotelMapper.toHotel(hotelDTO);
+    hotel.setServices(hotelDTO.getServices());
     hotel.setCreatedAt(Date.valueOf(LocalDate.now()));
     hotel.setUpdatedAt(Date.valueOf(LocalDate.now()));
 
@@ -174,9 +175,11 @@ public class HotelServiceImpl implements HotelService {
 
   private void updateFields(Hotel target, HotelDTO source) {
     target.setName(source.getName());
+    target.setServices(source.getServices());
     target.setDistrict(source.getDistrict());
-    target.setAddressDetail(source.getAddressDetail());
     target.setTotalRooms(source.getTotalRooms());
+    target.setAddressDetail(source.getAddressDetail());
+
   }
 
   @Override

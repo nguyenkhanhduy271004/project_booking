@@ -39,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -64,7 +65,7 @@ public class BookingServiceImpl implements BookingService {
   public List<BookingResponse> createBooking(BookingRequest request) {
     User currentUser = userContext.getCurrentUser();
     Voucher voucher = voucherRepository.findById(request.getVoucherId()).orElse(null);
-    validateVoucher(voucher, request.getHotelId());
+    validateVoucherCollect(voucher, request.getHotelId());
 
     validateBookingDates(request.getCheckInDate(), request.getCheckOutDate());
 
@@ -123,15 +124,30 @@ public class BookingServiceImpl implements BookingService {
     return List.of(response);
   }
 
-  private void validateVoucher(Voucher voucher, Long hotelId) {
-    if (voucher == null ||
-        voucher.getQuantity() <= 0 ||
-        voucher.getExpiredDate().isBefore(LocalDate.now()) ||
-        !voucher.getHotel().getId().equals(hotelId) ||
-        voucher.getStatus().equals(VoucherStatus.EXPIRED)) {
-      throw new BadRequestException("Voucher is not valid!");
+  private void validateVoucherCollect(Voucher voucher, Long hotelId) {
+    List<String> errors = new ArrayList<>();
+    if (voucher == null) {
+      errors.add("Voucher does not exist or code is invalid");
+    }
+    if (voucher != null) {
+      if (voucher.getStatus() != VoucherStatus.ACTIVE) {
+        errors.add("Voucher is not active. Current status: " + voucher.getStatus());
+      }
+      if (voucher.getQuantity() <= 0) {
+        errors.add("Voucher has no remaining quantity");
+      }
+      if (voucher.getExpiredDate().isBefore(LocalDate.now())) {
+        errors.add("Voucher expired on " + voucher.getExpiredDate());
+      }
+      if (!voucher.getHotel().getId().equals(hotelId)) {
+        errors.add("Voucher does not apply to hotel with id " + hotelId);
+      }
+    }
+    if (!errors.isEmpty()) {
+      throw new BadRequestException(String.join("; ", errors));
     }
   }
+
 
   private void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
     if (checkIn == null || checkOut == null || !checkOut.isAfter(checkIn)) {
@@ -203,9 +219,9 @@ public class BookingServiceImpl implements BookingService {
     User guest = userRepository.findById(guestId)
         .orElseThrow(() -> new ResourceNotFoundException("Guest not found with id: " + guestId));
 
-    if (guest.getType() != UserType.GUEST) {
-      throw new BadRequestException("Specified user is not a guest. User type: " + guest.getType());
-    }
+//    if (guest.getType() != UserType.GUEST) {
+//      throw new BadRequestException("Specified user is not a guest. User type: " + guest.getType());
+//    }
 
     return guest;
   }
@@ -370,6 +386,13 @@ public class BookingServiceImpl implements BookingService {
             currentUser.getId())
         .orElseThrow(() -> new ResourceNotFoundException("Booking not found or access denied"));
     return bookingMapper.toBookingResponse(booking);
+  }
+
+  @Override
+  public Page<BookingResponse> getHistoryBookingByRoomId(Long roomId, LocalDate from, LocalDate to, int page, int size) {
+    Pageable pageable = PageRequest.of(page, size);
+    Page<Booking> result = bookingRepository.findHistoryByRoomId(roomId, from, to, pageable);
+    return result.map(bookingMapper::toBookingResponse);
   }
 
   @Scheduled(fixedRate = 300000)

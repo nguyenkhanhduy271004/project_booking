@@ -1,9 +1,9 @@
 package com.booking.booking.service.impl;
 
-import com.booking.booking.dto.RoomDTO;
 import com.booking.booking.controller.response.RoomResponse;
-import com.booking.booking.exception.InvalidRoomIdsException;
+import com.booking.booking.dto.RoomDTO;
 import com.booking.booking.exception.BadRequestException;
+import com.booking.booking.exception.InvalidRoomIdsException;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.mapper.RoomMapper;
 import com.booking.booking.model.Booking;
@@ -15,8 +15,8 @@ import com.booking.booking.repository.HotelRepository;
 import com.booking.booking.repository.RoomRepository;
 import com.booking.booking.service.CloudinaryService;
 import com.booking.booking.service.RoomService;
-import com.booking.booking.util.UserContext;
 import com.booking.booking.util.AuthorizationUtils;
+import com.booking.booking.util.UserContext;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -104,6 +104,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     Room roomEntity = roomMapper.toRoom(room);
+    roomEntity.setServices(room.getServices());
     roomEntity.setCreatedByUser(userContext.getCurrentUser());
 
     return roomRepository.save(roomEntity);
@@ -121,12 +122,12 @@ public class RoomServiceImpl implements RoomService {
     Room room = roomRepository.findByIdAndIsDeletedFalse(id)
         .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
 
-
     room.setTypeRoom(updatedRoom.getTypeRoom());
     room.setCapacity(updatedRoom.getCapacity());
-    room.setPricePerNight(updatedRoom.getPricePerNight());
+    room.setServices(updatedRoom.getServices());
     room.setAvailable(updatedRoom.isAvailable());
     room.setUpdatedByUser(userContext.getCurrentUser());
+    room.setPricePerNight(updatedRoom.getPricePerNight());
 
     if (images != null && images.length > 0) {
       try {
@@ -208,7 +209,8 @@ public class RoomServiceImpl implements RoomService {
   @Override
   public void softDeleteRooms(List<Long> ids) {
     List<Room> existing = roomRepository.findAllByIdInAndIsDeletedFalse(ids);
-    java.util.Set<Long> valid = existing.stream().map(Room::getId).collect(java.util.stream.Collectors.toSet());
+    java.util.Set<Long> valid = existing.stream().map(Room::getId)
+        .collect(java.util.stream.Collectors.toSet());
     List<Long> invalid = ids.stream().filter(id -> !valid.contains(id)).toList();
     if (!invalid.isEmpty()) {
       throw new InvalidRoomIdsException("Some room IDs are invalid or already deleted", invalid);
@@ -228,7 +230,8 @@ public class RoomServiceImpl implements RoomService {
   @Override
   public void restoreRooms(List<Long> ids) {
     List<Room> existing = roomRepository.findAllByIdInAndIsDeletedTrue(ids);
-    java.util.Set<Long> valid = existing.stream().map(Room::getId).collect(java.util.stream.Collectors.toSet());
+    java.util.Set<Long> valid = existing.stream().map(Room::getId)
+        .collect(java.util.stream.Collectors.toSet());
     List<Long> invalid = ids.stream().filter(id -> !valid.contains(id)).toList();
     if (!invalid.isEmpty()) {
       throw new InvalidRoomIdsException("Some room IDs are invalid or not deleted", invalid);
@@ -259,7 +262,8 @@ public class RoomServiceImpl implements RoomService {
   @Override
   public void deleteRoomsPermanently(List<Long> ids) {
     List<Room> list = roomRepository.findAllById(ids);
-    java.util.Set<Long> valid = list.stream().map(Room::getId).collect(java.util.stream.Collectors.toSet());
+    java.util.Set<Long> valid = list.stream().map(Room::getId)
+        .collect(java.util.stream.Collectors.toSet());
     List<Long> invalid = ids.stream().filter(id -> !valid.contains(id)).toList();
     if (!invalid.isEmpty()) {
       throw new InvalidRoomIdsException("Some room IDs are invalid", invalid);
@@ -318,7 +322,8 @@ public class RoomServiceImpl implements RoomService {
   }
 
   @Override
-  public List<RoomResponse> getAvailableRoomsWithHotelName(Long hotelId, LocalDate checkIn, LocalDate checkOut) {
+  public List<RoomResponse> getAvailableRoomsWithHotelName(Long hotelId, LocalDate checkIn,
+      LocalDate checkOut) {
     List<Room> availableRooms = getAvailableRooms(hotelId, checkIn, checkOut);
     return availableRooms.stream()
         .map(roomMapper::toRoomResponseDTO)
@@ -359,7 +364,8 @@ public class RoomServiceImpl implements RoomService {
     return getAvailableRooms(hotelId, checkIn, checkOut).size();
   }
 
-  public boolean areRoomsAvailableForBooking(List<Long> roomIds, LocalDate checkIn, LocalDate checkOut) {
+  public boolean areRoomsAvailableForBooking(List<Long> roomIds, LocalDate checkIn,
+      LocalDate checkOut) {
     for (Long roomId : roomIds) {
       if (!isRoomAvailable(roomId, checkIn, checkOut)) {
         return false;
@@ -369,11 +375,9 @@ public class RoomServiceImpl implements RoomService {
   }
 
   /**
-   * Lấy danh sách room với phân quyền
-   * - System Admin & Admin: Xem tất cả
-   * - Manager: Chỉ xem room thuộc hotel mình quản lý
-   * - Staff: Chỉ xem room thuộc hotel mình làm việc
-   * - Guest: Không xem được
+   * Lấy danh sách room với phân quyền - System Admin & Admin: Xem tất cả - Manager: Chỉ xem room
+   * thuộc hotel mình quản lý - Staff: Chỉ xem room thuộc hotel mình làm việc - Guest: Không xem
+   * được
    */
   @Override
   public Page<RoomResponse> getAllRoomsWithAuthorization(Pageable pageable, boolean deleted) {
@@ -403,10 +407,8 @@ public class RoomServiceImpl implements RoomService {
   }
 
   /**
-   * Lấy room theo ID với phân quyền
-   * - System Admin & Admin: Xem tất cả
-   * - Manager & Staff: Chỉ xem room thuộc hotel mình quản lý/làm việc
-   * - Guest: Không xem được
+   * Lấy room theo ID với phân quyền - System Admin & Admin: Xem tất cả - Manager & Staff: Chỉ xem
+   * room thuộc hotel mình quản lý/làm việc - Guest: Không xem được
    */
   @Override
   public Optional<RoomResponse> getRoomByIdWithAuthorization(Long id) {
@@ -417,7 +419,8 @@ public class RoomServiceImpl implements RoomService {
       return getRoomByIdWithHotelName(id);
     } else if (authorizationUtils.isManager() || authorizationUtils.isStaff()) {
       // Manager and Staff can only see rooms from hotels they manage/work at
-      Optional<Room> room = roomRepository.findByIdAndHotelManagedByUserAndIsDeletedFalse(id, currentUser);
+      Optional<Room> room = roomRepository.findByIdAndHotelManagedByUserAndIsDeletedFalse(id,
+          currentUser);
       return room.map(roomMapper::toRoomResponseDTO);
     } else {
       // Guest or other roles - return empty

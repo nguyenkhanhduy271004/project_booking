@@ -42,7 +42,6 @@ public class Booking extends AbstractEntity<Long> implements Serializable {
   @com.fasterxml.jackson.annotation.JsonBackReference(value = "hotel-bookings")
   private Hotel hotel;
 
-  // Legacy room_id column - keep for database compatibility
   @Column(name = "room_id")
   private Long legacyRoomId;
 

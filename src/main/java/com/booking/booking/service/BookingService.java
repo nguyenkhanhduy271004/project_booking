@@ -2,6 +2,7 @@ package com.booking.booking.service;
 
 import com.booking.booking.controller.request.BookingRequest;
 import com.booking.booking.controller.response.BookingResponse;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,4 +38,6 @@ public interface BookingService {
   Page<BookingResponse> getMyBookings(Pageable pageable);
 
   BookingResponse getMyBookingById(Long id);
+
+  Page<BookingResponse> getHistoryBookingByRoomId(Long roomId, LocalDate from, LocalDate to, int page, int size);
 }

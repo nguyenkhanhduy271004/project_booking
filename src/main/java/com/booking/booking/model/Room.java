@@ -67,4 +67,9 @@ public class Room extends AbstractEntity<Long> implements Serializable {
   @JsonBackReference(value = "room-updated-by")
   private User updatedByUser;
 
+  @ElementCollection
+  @CollectionTable(name = "room_services", joinColumns = @JoinColumn(name = "room_id"))
+  @Column(name = "service")
+  private List<String> services = new ArrayList<>();
+
 }

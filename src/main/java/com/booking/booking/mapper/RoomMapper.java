@@ -38,6 +38,7 @@ public class RoomMapper {
         .listImageUrl(room.getListImageUrl())
         .hotelId(room.getHotel() != null ? room.getHotel().getId() : null)
         .hotelName(room.getHotel() != null ? room.getHotel().getName() : null)
+        .services(room.getServices())
         .createdAt(room.getCreatedAt())
         .updatedAt(room.getUpdatedAt())
         .createdByUser(room.getCreatedByUser() != null

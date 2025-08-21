@@ -26,6 +26,8 @@ public class RoomResponse {
 
     private List<String> listImageUrl;
 
+    private List<String> services;
+
     // Hotel information
     private Long hotelId;
     private String hotelName;

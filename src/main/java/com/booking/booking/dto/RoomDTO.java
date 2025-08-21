@@ -25,5 +25,7 @@ public class RoomDTO {
   private Long hotelId;
 
   private List<String> listImageUrl = new ArrayList<>();
+
+  private List<String> services;
 }
 

@@ -1,10 +1,12 @@
 package com.booking.booking.controller;
 
+import com.booking.booking.controller.response.BookingResponse;
 import com.booking.booking.controller.response.PageResponse;
 import com.booking.booking.controller.response.ResponseSuccess;
-import com.booking.booking.dto.RoomDTO;
 import com.booking.booking.controller.response.RoomResponse;
+import com.booking.booking.dto.RoomDTO;
 import com.booking.booking.exception.ResourceNotFoundException;
+import com.booking.booking.service.BookingService;
 import com.booking.booking.service.RoomService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,20 +19,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/v1/rooms")
@@ -40,10 +43,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class RoomController {
 
   private final RoomService roomService;
+  private final BookingService bookingService;
 
   /**
-   * Lấy danh sách room cho guest - không có phân quyền
-   * Chỉ hiển thị room không bị xóa và available
+   * Lấy danh sách room cho guest - không có phân quyền Chỉ hiển thị room không bị xóa và available
    */
   @GetMapping
   @ResponseStatus(HttpStatus.OK)
@@ -52,7 +55,8 @@ public class RoomController {
       @RequestParam(defaultValue = "10", required = false) int size,
       @RequestParam(defaultValue = "id", required = false) String sort) {
     Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
-    Page<RoomResponse> rooms = roomService.getAllRoomsWithHotelName(pageable, false); // Chỉ lấy room không bị xóa
+    Page<RoomResponse> rooms = roomService.getAllRoomsWithHotelName(pageable,
+        false);
 
     PageResponse<?> response = PageResponse.builder()
         .pageNo(pageable.getPageNumber())
@@ -65,8 +69,7 @@ public class RoomController {
   }
 
   /**
-   * Lấy room theo ID cho guest - không có phân quyền
-   * Chỉ hiển thị room không bị xóa
+   * Lấy room theo ID cho guest - không có phân quyền Chỉ hiển thị room không bị xóa
    */
   @GetMapping("/{id}")
   @ResponseStatus(HttpStatus.OK)
@@ -171,7 +174,8 @@ public class RoomController {
     LocalDate checkInDate = LocalDate.parse(checkIn);
     LocalDate checkOutDate = LocalDate.parse(checkOut);
 
-    List<RoomResponse> availableRooms = roomService.getAvailableRoomsWithHotelName(hotelId, checkInDate, checkOutDate);
+    List<RoomResponse> availableRooms = roomService.getAvailableRoomsWithHotelName(hotelId,
+        checkInDate, checkOutDate);
     return new ResponseSuccess(HttpStatus.OK, "Available rooms retrieved", availableRooms);
   }
 
@@ -186,5 +190,28 @@ public class RoomController {
 
     List<LocalDate> unavailableDates = roomService.getUnavailableDates(id, fromDate, toDate);
     return new ResponseSuccess(HttpStatus.OK, "Unavailable dates retrieved", unavailableDates);
+  }
+
+  @GetMapping("/{roomId}/bookings")
+  public ResponseSuccess getRoomBookings(
+      @PathVariable Long roomId,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size
+  ) {
+
+    Page<BookingResponse> bookings = bookingService.getHistoryBookingByRoomId(roomId, from, to,
+        page, size);
+
+    PageResponse<?> response = PageResponse.builder()
+        .pageNo(page)
+        .pageSize(size)
+        .totalPage(bookings.getTotalPages())
+        .totalElements(bookings.getTotalElements())
+        .items(bookings.getContent())
+        .build();
+    return new ResponseSuccess(HttpStatus.OK, "Get history booking of room successfully",
+        response);
   }
 }
