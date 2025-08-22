@@ -3,6 +3,7 @@ package com.booking.booking.model;
 import com.booking.booking.common.TypeRoom;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -54,7 +55,8 @@ public class Room extends AbstractEntity<Long> implements Serializable {
   @JsonIgnore
   private List<Booking> bookings = new ArrayList<>();
 
-  @OneToMany(mappedBy = "room")
+  @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
   private List<Evaluate> evaluates = new ArrayList<>();
 
   @ManyToOne
@@ -70,6 +72,7 @@ public class Room extends AbstractEntity<Long> implements Serializable {
   @ElementCollection
   @CollectionTable(name = "room_services", joinColumns = @JoinColumn(name = "room_id"))
   @Column(name = "service")
+  @Builder.Default
   private List<String> services = new ArrayList<>();
 
 }

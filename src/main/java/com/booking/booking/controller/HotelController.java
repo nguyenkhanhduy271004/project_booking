@@ -38,8 +38,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "Hotel Controller")
 public class HotelController {
 
-  private final HotelService hotelService;
   private final HotelMapper hotelMapper;
+  private final HotelService hotelService;
 
   /**
    * Lấy danh sách hotel cho guest - không có phân quyền Chỉ hiển thị hotel không bị xóa
@@ -53,7 +53,7 @@ public class HotelController {
 
     Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
     Page<HotelDTO> hotelPage = hotelService.getAllHotels(pageable,
-            false) // Chỉ lấy hotel không bị xóa
+            false)
         .map(hotelMapper::toDTO);
 
     PageResponse<?> response = PageResponse.builder()
@@ -97,6 +97,14 @@ public class HotelController {
 
     return new ResponseSuccess(HttpStatus.OK, "Get rooms by hotel id successfully",
         hotelService.getRoomByHotelId(id));
+  }
+
+  @GetMapping("/managers")
+  @ResponseStatus(HttpStatus.OK)
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN','ADMIN')")
+  public ResponseSuccess getListManagersForCreateHotelOrUpdateHotel() {
+
+    return new ResponseSuccess(HttpStatus.OK, "Get list managers for create or update hotel successfully", hotelService.getListManagersForCreateOrUpdateHotel());
   }
 
   @PostMapping
@@ -167,4 +175,5 @@ public class HotelController {
     hotelService.deleteHotelsPermanently(ids);
     return new ResponseSuccess(HttpStatus.OK, "Hotels permanently deleted successfully");
   }
+
 }

@@ -60,11 +60,19 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
   private User managedByUser;
 
   @OneToMany(mappedBy = "hotel")
+  @JsonIgnore
+  @Builder.Default
   private Set<Voucher> vouchers = new HashSet<>();
+
+  @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonIgnore
+  @Builder.Default
+  private List<Booking> bookings = new ArrayList<>();
 
   @ElementCollection
   @CollectionTable(name = "hotel_services", joinColumns = @JoinColumn(name = "hotel_id"))
   @Column(name = "service")
+  @Builder.Default
   private List<String> services = new ArrayList<>();
 
 }

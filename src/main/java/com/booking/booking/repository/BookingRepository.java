@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long>,
@@ -58,12 +59,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long>,
   @Query("UPDATE Booking b SET b.isDeleted = false, b.deletedAt = null WHERE b.id IN :ids AND b.isDeleted = true")
   int restoreByIds(@Param("ids") List<Long> ids);
 
-  @org.springframework.transaction.annotation.Transactional
+  @Transactional
   @Modifying(clearAutomatically = true)
   @Query("DELETE FROM Booking b WHERE EXISTS (SELECT r FROM b.rooms r WHERE r.id IN :roomIds)")
   int deleteByRoomIds(@Param("roomIds") List<Long> roomIds);
 
-  @org.springframework.transaction.annotation.Transactional
+  @Transactional
   @Modifying(clearAutomatically = true)
   @Query("DELETE FROM Booking b WHERE b.hotel.id IN :hotelIds")
   int deleteByHotelIds(@Param("hotelIds") List<Long> hotelIds);
@@ -83,4 +84,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long>,
       @Param("to") LocalDate to,
       Pageable pageable
   );
+
+  @Query(value = """
+        SELECT DISTINCT br.booking_id
+        FROM tbl_booking_room br
+        WHERE br.room_id IN (:roomIds)
+      """, nativeQuery = true)
+  List<Long> findBookingIdsByRoomIds(@Param("roomIds") List<Long> roomIds);
+
+  @Modifying
+  @Query(value = """
+        DELETE FROM tbl_booking_room
+        WHERE booking_id IN (:bookingIds)
+      """, nativeQuery = true)
+  void deleteBookingRoomsByBookingIds(@Param("bookingIds") List<Long> bookingIds);
 }

@@ -1,10 +1,12 @@
 package com.booking.booking.service;
 
 import com.booking.booking.controller.response.PageResponse;
+import com.booking.booking.controller.response.UserResponse;
 import com.booking.booking.dto.HotelDTO;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Room;
+import com.booking.booking.model.User;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -43,8 +45,9 @@ public interface HotelService {
 
     void deleteHotelsPermanently(List<Long> ids);
 
-    // Role-based methods - Phân quyền cho Manager/Staff
     Page<Hotel> getAllHotelsWithAuthorization(Pageable pageable, boolean deleted);
 
     Optional<Hotel> getHotelByIdWithAuthorization(Long id);
+
+    List<UserResponse> getListManagersForCreateOrUpdateHotel();
 }

@@ -1,5 +1,6 @@
 package com.booking.booking.repository;
 
+import com.booking.booking.common.UserType;
 import com.booking.booking.model.User;
 import jakarta.transaction.Transactional;
 import java.util.Date;
@@ -66,5 +67,6 @@ public interface UserRepository extends JpaRepository<User, Long>,
   int restoreDeletedByIds(@Param("ids") List<Long> ids);
 
 
+  List<User> findAllByType(UserType type);
 
 }

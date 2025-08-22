@@ -1,9 +1,12 @@
 package com.booking.booking.repository;
 
 import com.booking.booking.model.Room;
+import com.booking.booking.model.User;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -11,50 +14,52 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificationExecutor<Room> {
-        List<Room> findByHotelId(Long hotelId);
 
-        long countByHotelId(Long hotelId);
+  List<Room> findByHotelId(Long hotelId);
 
-        org.springframework.data.domain.Page<Room> findAllByIsDeletedFalse(
-                        org.springframework.data.domain.Pageable pageable);
+  long countByHotelId(Long hotelId);
 
-        Optional<Room> findByIdAndIsDeletedFalse(Long id);
+  Page<Room> findAllByIsDeletedFalse(Pageable pageable);
 
-        List<Room> findAllByIdInAndIsDeletedFalse(List<Long> ids);
+  Optional<Room> findByIdAndIsDeletedFalse(Long id);
 
-        List<Room> findAllByIdInAndIsDeletedTrue(List<Long> ids);
+  List<Room> findAllByIdInAndIsDeletedFalse(List<Long> ids);
 
-        @Modifying(clearAutomatically = true)
-        @Query("UPDATE Room r SET r.isDeleted = true, r.deletedAt = :deletedAt WHERE r.id IN :ids AND r.isDeleted = false")
-        int softDeleteByIds(@Param("ids") List<Long> ids, @Param("deletedAt") Date deletedAt);
+  List<Room> findAllByIdInAndIsDeletedTrue(List<Long> ids);
 
-        @Modifying(clearAutomatically = true)
-        @Query("UPDATE Room r SET r.isDeleted = false, r.deletedAt = null WHERE r.id IN :ids AND r.isDeleted = true")
-        int restoreByIds(@Param("ids") List<Long> ids);
+  @Modifying(clearAutomatically = true)
+  @Query("UPDATE Room r SET r.isDeleted = true, r.deletedAt = :deletedAt WHERE r.id IN :ids AND r.isDeleted = false")
+  int softDeleteByIds(@Param("ids") List<Long> ids, @Param("deletedAt") Date deletedAt);
 
-        org.springframework.data.domain.Page<Room> findAllByIsDeletedTrue(
-                        org.springframework.data.domain.Pageable pageable);
+  @Modifying(clearAutomatically = true)
+  @Query("UPDATE Room r SET r.isDeleted = false, r.deletedAt = null WHERE r.id IN :ids AND r.isDeleted = true")
+  int restoreByIds(@Param("ids") List<Long> ids);
 
-        List<Room> findByHotelIdAndIsDeletedFalseAndAvailableTrue(Long hotelId);
+  Page<Room> findAllByIsDeletedTrue(Pageable pageable);
 
-        // Methods for role-based filtering
-        @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.isDeleted = false")
-        org.springframework.data.domain.Page<Room> findAllByHotelManagedByUserAndIsDeletedFalse(
-                        @Param("managedByUser") com.booking.booking.model.User managedByUser,
-                        org.springframework.data.domain.Pageable pageable);
+  List<Room> findByHotelIdAndIsDeletedFalseAndAvailableTrue(Long hotelId);
 
-        @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.isDeleted = true")
-        org.springframework.data.domain.Page<Room> findAllByHotelManagedByUserAndIsDeletedTrue(
-                        @Param("managedByUser") com.booking.booking.model.User managedByUser,
-                        org.springframework.data.domain.Pageable pageable);
+  @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.isDeleted = false")
+  Page<Room> findAllByHotelManagedByUserAndIsDeletedFalse(
+      @Param("managedByUser") com.booking.booking.model.User managedByUser,
+      Pageable pageable);
 
-        @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.id = :id AND r.isDeleted = false")
-        Optional<Room> findByIdAndHotelManagedByUserAndIsDeletedFalse(
-                        @Param("id") Long id,
-                        @Param("managedByUser") com.booking.booking.model.User managedByUser);
+  @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.isDeleted = true")
+  Page<Room> findAllByHotelManagedByUserAndIsDeletedTrue(
+      @Param("managedByUser") User managedByUser,
+      Pageable pageable);
 
-        @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.hotel.id = :hotelId AND r.isDeleted = false AND r.available = true")
-        List<Room> findByHotelIdAndManagedByUserAndIsDeletedFalseAndAvailableTrue(
-                        @Param("hotelId") Long hotelId,
-                        @Param("managedByUser") com.booking.booking.model.User managedByUser);
+  @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.id = :id AND r.isDeleted = false")
+  Optional<Room> findByIdAndHotelManagedByUserAndIsDeletedFalse(
+      @Param("id") Long id,
+      @Param("managedByUser") User managedByUser);
+
+  @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.hotel.id = :hotelId AND r.isDeleted = false AND r.available = true")
+  List<Room> findByHotelIdAndManagedByUserAndIsDeletedFalseAndAvailableTrue(
+      @Param("hotelId") Long hotelId,
+      @Param("managedByUser") User managedByUser);
+
+  @Query("SELECT DISTINCT r FROM Room r LEFT JOIN FETCH r.listImageUrl WHERE r.hotel.id = :hotelId")
+  List<Room> findByHotelIdWithImages(@Param("hotelId") Long hotelId);
+
 }
