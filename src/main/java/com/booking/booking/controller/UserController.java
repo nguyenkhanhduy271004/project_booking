@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,7 +54,7 @@ public class UserController {
   @Operation(summary = "Get user list", description = "API retrieve users (deleted or not)")
   @GetMapping
   @ResponseStatus(HttpStatus.OK)
-  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
   public ResponseSuccess getUserList(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false, defaultValue = "id") String sort,
@@ -70,7 +71,6 @@ public class UserController {
       userPageResponse = userService.findAll(keyword, sort, page, size);
     }
 
-    // Convert to standardized PageResponse format
     PageResponse<?> response = PageResponse.builder()
         .pageNo(userPageResponse.getPageNumber())
         .pageSize(userPageResponse.getPageSize())
@@ -93,6 +93,47 @@ public class UserController {
 
     return new ResponseSuccess(HttpStatus.OK, "Search users successfully",
         userService.advanceSearchWithSpecification(pageable, user));
+  }
+
+  @GetMapping("/manager")
+  @ResponseStatus(HttpStatus.OK)
+  @PreAuthorize("hasAuthority('MANAGER')")
+  public ResponseSuccess getListUserForManager(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+
+    Pageable pageable = PageRequest.of(page, size);
+
+    UserPageResponse userPageResponse = userService.findUserForManager(pageable);
+
+    PageResponse<?> response = PageResponse.builder()
+        .pageNo(userPageResponse.getPageNumber())
+        .pageSize(userPageResponse.getPageSize())
+        .totalPage(userPageResponse.getTotalPages())
+        .totalElements(userPageResponse.getTotalElements())
+        .items(userPageResponse.getUsers())
+        .build();
+    return new ResponseSuccess(HttpStatus.OK, "Get list user for manager", response);
+  }
+
+  @GetMapping("/staff")
+  @PreAuthorize("hasAuthority('STAFF')")
+  public ResponseSuccess getListUserForStaff(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+
+    Pageable pageable = PageRequest.of(page, size);
+
+    UserPageResponse userPageResponse = userService.findUserForStaff(pageable);
+
+    PageResponse<?> response = PageResponse.builder()
+        .pageNo(userPageResponse.getPageNumber())
+        .pageSize(userPageResponse.getPageSize())
+        .totalPage(userPageResponse.getTotalPages())
+        .totalElements(userPageResponse.getTotalElements())
+        .items(userPageResponse.getUsers())
+        .build();
+    return new ResponseSuccess(HttpStatus.OK, "Get list user for manager", response);
   }
 
   @Operation(summary = "Get user detail", description = "API retrieve user detail by ID from database")
@@ -217,7 +258,7 @@ public class UserController {
 
   @Operation(summary = "Delete user", description = "API activate user from database")
   @DeleteMapping("/{userId}")
-  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
   public ResponseSuccess deleteUser(@PathVariable @Min(1) Long userId) {
     log.info("Deleting user: {}", userId);
 
@@ -228,7 +269,7 @@ public class UserController {
 
   @Operation(summary = "Delete users", description = "API activate user from database")
   @DeleteMapping("/ids")
-  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
   public ResponseSuccess deleteUsers(@RequestBody List<Long> userIds) {
     log.info("Deleting users: {}", userIds);
 
@@ -238,7 +279,7 @@ public class UserController {
   }
 
   @DeleteMapping("/{userId}/permanent")
-  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
   public ResponseSuccess deleteUserPermanently(@PathVariable @Min(1) Long userId) {
     log.info("Deleting user permanently: {}", userId);
     userService.deletePermanentlyById(userId);
@@ -246,7 +287,7 @@ public class UserController {
   }
 
   @DeleteMapping("/permanent")
-  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
   public ResponseSuccess deleteUsersPermanently(@RequestBody List<Long> userIds) {
     log.info("Deleting users permanently: {}", userIds);
     userService.deletePermanentlyByIds(userIds);
@@ -255,7 +296,7 @@ public class UserController {
 
   @Operation(summary = "Restore user", description = "API activate user from database")
   @PutMapping("/{userId}/restore")
-  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
   public ResponseSuccess restoreUser(@PathVariable @Min(1) Long userId) {
     log.info("Deleting user: {}", userId);
 
@@ -266,7 +307,7 @@ public class UserController {
 
   @Operation(summary = "Restore users", description = "API activate user from database")
   @PutMapping("/restore")
-  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
   public ResponseSuccess restoreUsers(@RequestBody List<Long> userIds) {
     log.info("Restore users: {}", userIds);
 

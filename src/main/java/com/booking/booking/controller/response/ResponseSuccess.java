@@ -1,6 +1,9 @@
 package com.booking.booking.controller.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -36,18 +39,22 @@ public class ResponseSuccess extends ResponseEntity {
 
     private final int status;
     private final String message;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime time;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Object data;
 
     public Payload(int status, String message) {
       this.status = status;
       this.message = message;
+      this.time = LocalDateTime.now();
     }
 
     public Payload(int status, String message, Object data) {
       this.status = status;
       this.message = message;
       this.data = data;
+      this.time = LocalDateTime.now();
     }
 
     public int getStatus() {
@@ -60,6 +67,10 @@ public class ResponseSuccess extends ResponseEntity {
 
     public Object getData() {
       return data;
+    }
+
+    public LocalDateTime getTime() {
+      return time;
     }
   }
 }

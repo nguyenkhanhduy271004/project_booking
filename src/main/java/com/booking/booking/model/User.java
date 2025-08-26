@@ -10,6 +10,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -87,34 +89,14 @@ public class User extends AbstractEntity<Long> implements UserDetails, Serializa
   @OneToMany(mappedBy = "createdBy")
   private List<Evaluate> evaluates = new ArrayList<>();
 
-//  @JsonIgnore
-//  @OneToMany(mappedBy = "createdByUser")
-//  @JsonManagedReference(value = "hotel-created-by")
-//  private List<HotelEntity> hotels = new ArrayList<>();
-//
-//  @JsonIgnore
-//  @OneToMany(mappedBy = "updatedByUser")
-//  @JsonManagedReference(value = "hotel-updated-by")
-//  private List<HotelEntity> updatedHotels = new ArrayList<>();
-//
-//  @OneToMany(mappedBy = "managedByUser")
-//  @JsonManagedReference(value = "hotel-managed-by")
-//  private List<HotelEntity> managedHotels = new ArrayList<>();
-//
-//  @OneToMany(mappedBy = "createdByUser")
-//  @JsonManagedReference(value = "room-created-by")
-//  private List<RoomEntity> rooms = new ArrayList<>();
-//
-//  @OneToMany(mappedBy = "updatedByUser")
-//  @JsonManagedReference(value = "room-updated-by")
-//  private List<RoomEntity> updatedRooms = new ArrayList<>();
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "hotel_id")
+  private Hotel hotel;
 
   public Collection<? extends GrantedAuthority> getAuthorities() {
 
-    // Get roles by user_id
     List<Role> roleList = roles.stream().map(UserHasRole::getRole).toList();
 
-    // Get role name
     List<String> roleNames = roleList.stream().map(Role::getName).toList();
     log.info("User roles: {}", roleNames);
 

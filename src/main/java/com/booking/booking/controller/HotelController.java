@@ -69,9 +69,9 @@ public class HotelController {
   @Operation(summary = "Search hotel by keyword", description = "API retrieve user from database")
   @GetMapping("/search")
   @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
-  public ResponseSuccess searchUser(Pageable pageable,
+  public ResponseSuccess searchHotel(Pageable pageable,
       @RequestParam(required = false) String[] hotel) {
-    log.info("Search user");
+    log.info("Search hotel");
 
     return new ResponseSuccess(HttpStatus.OK, "Search users successfully",
         hotelService.advanceSearchWithSpecification(pageable, hotel));

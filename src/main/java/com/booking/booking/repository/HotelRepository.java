@@ -34,17 +34,9 @@ public interface HotelRepository extends JpaRepository<Hotel, Long>,
 
   Page<Hotel> findAllByIsDeletedTrue(Pageable pageable);
 
-  Page<Hotel> findAllByManagedByUserAndIsDeletedFalse(
-      User managedByUser,
-      org.springframework.data.domain.Pageable pageable);
+  Page<Hotel> findAllByManagedByUserAndIsDeletedFalse(User managedByUser, Pageable pageable);
 
-  Page<Hotel> findAllByManagedByUserAndIsDeletedTrue(
-      User managedByUser,
-      Pageable pageable);
-
-  List<Hotel> findAllByManagedByUserAndIsDeletedFalse(User managedByUser);
-
-  Optional<Hotel> findByIdAndManagedByUserAndIsDeletedFalse(Long id, User managedByUser);
+  Page<Hotel> findAllByManagedByUserAndIsDeletedTrue(User managedByUser, Pageable pageable);
 
   Optional<Hotel> findByManagedByUserAndIsDeletedFalse(User managedByUser);
 

@@ -44,6 +44,25 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
   @Builder.Default
   private List<Room> rooms = new ArrayList<>();
 
+  @OneToMany(mappedBy = "hotel")
+  @JsonIgnore
+  @Builder.Default
+  private Set<Voucher> vouchers = new HashSet<>();
+
+  @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonIgnore
+  @Builder.Default
+  private List<Booking> bookings = new ArrayList<>();
+
+  @OneToMany(mappedBy = "hotel")
+  private List<User> staffs = new ArrayList<>();
+
+  @ElementCollection
+  @CollectionTable(name = "hotel_services", joinColumns = @JoinColumn(name = "hotel_id"))
+  @Column(name = "service")
+  @Builder.Default
+  private List<String> services = new ArrayList<>();
+
   @ManyToOne
   @JoinColumn(name = "created_by")
   @JsonBackReference(value = "hotel-created-by")
@@ -58,21 +77,5 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
   @JoinColumn(name = "managed_by")
   @JsonBackReference(value = "hotel-managed-by")
   private User managedByUser;
-
-  @OneToMany(mappedBy = "hotel")
-  @JsonIgnore
-  @Builder.Default
-  private Set<Voucher> vouchers = new HashSet<>();
-
-  @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
-  @JsonIgnore
-  @Builder.Default
-  private List<Booking> bookings = new ArrayList<>();
-
-  @ElementCollection
-  @CollectionTable(name = "hotel_services", joinColumns = @JoinColumn(name = "hotel_id"))
-  @Column(name = "service")
-  @Builder.Default
-  private List<String> services = new ArrayList<>();
 
 }

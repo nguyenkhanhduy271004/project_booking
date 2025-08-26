@@ -193,6 +193,7 @@ public class RoomController {
   }
 
   @GetMapping("/{roomId}/bookings")
+  @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER','STAFF')")
   public ResponseSuccess getRoomBookings(
       @PathVariable Long roomId,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

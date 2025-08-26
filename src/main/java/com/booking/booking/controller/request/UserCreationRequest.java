@@ -5,10 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.io.Serializable;
-import lombok.Getter;
+import lombok.Data;
 import lombok.ToString;
 
-@Getter
+@Data
 @ToString
 public class UserCreationRequest implements Serializable {
 
@@ -49,4 +49,7 @@ public class UserCreationRequest implements Serializable {
   @NotBlank(message = "Type is required")
   @Pattern(regexp = "^(ADMIN|MANAGER|STAFF|GUEST)$", message = "Type must be one of ADMIN, MANAGER, STAFF, GUEST")
   private String type;
+
+  @NotBlank(message = "HotelID is required")
+  private Long hotelId;
 }

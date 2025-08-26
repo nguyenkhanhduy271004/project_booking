@@ -8,9 +8,12 @@ import com.booking.booking.controller.request.UserCreationRequest;
 import com.booking.booking.controller.request.UserUpdateRequest;
 import com.booking.booking.controller.response.UserResponse;
 import com.booking.booking.exception.BadRequestException;
+import com.booking.booking.exception.ResourceNotFoundException;
+import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Role;
 import com.booking.booking.model.User;
 import com.booking.booking.model.UserHasRole;
+import com.booking.booking.repository.HotelRepository;
 import com.booking.booking.repository.RoleRepository;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -29,6 +32,7 @@ public class UserMapper {
   private final ModelMapper modelMapper;
   private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
+  private final HotelRepository hotelRepository;
 
   public LocalDate convertToLocalDate(java.util.Date date, String zoneId) {
     if (date == null) {
@@ -87,6 +91,10 @@ public class UserMapper {
     newUser.setType(UserType.valueOf(req.getType()));
     newUser.setStatus(UserStatus.NONE);
     newUser.setPassword(passwordEncoder.encode(req.getPassword()));
+
+    Hotel hotel = hotelRepository.findById(req.getHotelId()).orElseThrow(() -> new ResourceNotFoundException("Hotel not found"));
+
+    newUser.setHotel(hotel);
 
     Role role = roleRepository.findByName(req.getType());
     if (role == null) {

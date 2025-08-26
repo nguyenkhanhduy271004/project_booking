@@ -9,6 +9,7 @@ import com.booking.booking.controller.response.PageResponse;
 import com.booking.booking.controller.response.UserPageResponse;
 import com.booking.booking.controller.response.UserResponse;
 import java.util.List;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface UserService {
@@ -24,6 +25,10 @@ public interface UserService {
   UserResponse findByUsername(String username);
 
   UserResponse findByEmail(String email);
+
+  UserPageResponse findUserForManager(Pageable pageable);
+
+  UserPageResponse findUserForStaff(Pageable pageable);
 
   long save(UserCreationRequest req);
 

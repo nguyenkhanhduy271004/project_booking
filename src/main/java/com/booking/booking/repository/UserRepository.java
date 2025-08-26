@@ -69,4 +69,10 @@ public interface UserRepository extends JpaRepository<User, Long>,
 
   List<User> findAllByType(UserType type);
 
+  @Query("SELECT u FROM User u WHERE u.hotel.id = :hotelId AND u.type = 'STAFF' OR u.type = 'GUEST'")
+  Page<User> findUserForManager(@Param("hotelId") Long id, Pageable pageable);
+
+  @Query("SELECT u FROM User u WHERE u.hotel.id = :hotelId AND u.type = 'GUEST' ")
+  Page<User> findUserForStaff(@Param("hotelId") Long id, Pageable pageable);
+
 }
