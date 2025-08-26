@@ -2,6 +2,7 @@ package com.booking.booking.repository;
 
 import com.booking.booking.model.Room;
 import com.booking.booking.model.User;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -61,5 +62,19 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
 
   @Query("SELECT DISTINCT r FROM Room r LEFT JOIN FETCH r.listImageUrl WHERE r.hotel.id = :hotelId")
   List<Room> findByHotelIdWithImages(@Param("hotelId") Long hotelId);
+
+  @Query("""
+          SELECT r FROM Room r 
+          WHERE r.hotel.id = :hotelId 
+          AND r.isDeleted = false 
+          AND r.available = true 
+          AND r.id NOT IN (
+              SELECT br.id FROM Booking b 
+              JOIN b.rooms br 
+              WHERE b.checkInDate < :checkOut 
+              AND b.checkOutDate > :checkIn
+          )
+      """)
+  List<Room> findAvailableRooms(Long hotelId, LocalDate checkIn, LocalDate checkOut);
 
 }

@@ -3,6 +3,7 @@ package com.booking.booking.service.impl;
 import com.booking.booking.controller.response.RoomResponse;
 import com.booking.booking.dto.RoomDTO;
 import com.booking.booking.exception.BadRequestException;
+import com.booking.booking.exception.ForBiddenException;
 import com.booking.booking.exception.InvalidRoomIdsException;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.mapper.RoomMapper;
@@ -19,12 +20,14 @@ import com.booking.booking.util.AuthorizationUtils;
 import com.booking.booking.util.UserContext;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -47,6 +50,7 @@ public class RoomServiceImpl implements RoomService {
   private final CloudinaryService cloudinaryService;
   private final AuthorizationUtils authorizationUtils;
   private final KafkaTemplate<String, String> kafkaTemplate;
+
 
   @Override
   public Page<Room> getAllRooms(Pageable pageable) {
@@ -77,10 +81,12 @@ public class RoomServiceImpl implements RoomService {
         .map(roomMapper::toRoomResponseDTO);
   }
 
+
   @Override
   public Room createRoom(RoomDTO room, MultipartFile[] imagesRoom) {
     Hotel existHotel = hotelRepository.findById(room.getHotelId()).orElseThrow(
-        () -> new ResourceNotFoundException("Hotel not found with id: " + room.getHotelId()));
+        () -> new ResourceNotFoundException("Hotel not found with id: " + room.getHotelId())
+    );
 
     long currentRoomCount = roomRepository.countByHotelId(existHotel.getId());
     if (currentRoomCount >= existHotel.getTotalRooms()) {
@@ -99,8 +105,7 @@ public class RoomServiceImpl implements RoomService {
 
   @Override
   public RoomResponse createRoomWithHotelName(RoomDTO room, MultipartFile[] imagesRoom) {
-    Room createdRoom = createRoom(room, imagesRoom);
-    return roomMapper.toRoomResponseDTO(createdRoom);
+    return roomMapper.toRoomResponseDTO(createRoom(room, imagesRoom));
   }
 
   @Override
@@ -126,9 +131,52 @@ public class RoomServiceImpl implements RoomService {
   @Override
   public RoomResponse updateRoomWithHotelName(Long id, RoomDTO updatedRoom,
       MultipartFile[] images) {
-    Room updatedRoomEntity = updateRoom(id, updatedRoom, images);
-    return roomMapper.toRoomResponseDTO(updatedRoomEntity);
+    return roomMapper.toRoomResponseDTO(updateRoom(id, updatedRoom, images));
   }
+
+
+  private List<String> uploadImages(MultipartFile[] images) {
+    if (images == null || images.length == 0) {
+      return Collections.emptyList();
+    }
+
+    return Stream.of(images)
+        .parallel()
+        .map(image -> {
+          try {
+            Map<String, Object> data = cloudinaryService.upload(image);
+            return (String) data.get("secure_url");
+          } catch (Exception e) {
+            throw new BadRequestException("Failed to upload image: " + image.getOriginalFilename());
+          }
+        })
+        .toList();
+  }
+
+  private void deleteImages(List<String> imageUrls) {
+    if (imageUrls == null || imageUrls.isEmpty()) {
+      return;
+    }
+
+    imageUrls.forEach(url -> {
+      try {
+        String publicId = extractPublicIdFromUrl(url);
+
+        kafkaTemplate.send("delete-image", publicId)
+            .whenComplete((result, ex) -> {
+              if (ex == null) {
+                log.info("Image deleted successfully: {}", publicId);
+              } else {
+                log.error("Failed to delete image {}: {}", publicId, ex.getMessage());
+              }
+            });
+
+      } catch (Exception e) {
+        log.warn("Failed to process image deletion: {}", url, e);
+      }
+    });
+  }
+
 
   private String extractPublicIdFromUrl(String imageUrl) {
     try {
@@ -139,48 +187,20 @@ public class RoomServiceImpl implements RoomService {
     }
   }
 
-  private List<String> uploadImages(MultipartFile[] images) {
-    List<String> imageUrls = new ArrayList<>();
-    if (images != null) {
-      for (MultipartFile image : images) {
-        try {
-          Map<String, Object> data = cloudinaryService.upload(image);
-          imageUrls.add((String) data.get("secure_url"));
-        } catch (Exception e) {
-          throw new BadRequestException("Failed to upload image: " + image.getOriginalFilename());
-        }
-      }
-    }
-    return imageUrls;
-  }
-
-  private void deleteImages(List<String> imageUrls) {
-    if (imageUrls != null) {
-      for (String url : imageUrls) {
-        try {
-          String publicId = extractPublicIdFromUrl(url);
-          kafkaTemplate.send("delete-image", publicId);
-        } catch (Exception e) {
-          log.warn("Failed to delete image: {}", url, e);
-        }
-      }
-    }
-  }
 
   @Override
   public void deleteRoom(Long id) {
     Room room = roomRepository.findByIdAndIsDeletedFalse(id)
         .orElseThrow(() -> new ResourceNotFoundException("Room not found with id: " + id));
-
     deleteImages(room.getListImageUrl());
     room.setDeleted(true);
-    room.setDeletedAt(new java.util.Date());
+    room.setDeletedAt(new Date());
     roomRepository.save(room);
   }
 
   @Override
   public void deleteRooms(List<Long> ids) {
-    roomRepository.softDeleteByIds(ids, new java.util.Date());
+    roomRepository.softDeleteByIds(ids, new Date());
   }
 
   @Override
@@ -188,7 +208,7 @@ public class RoomServiceImpl implements RoomService {
     Room room = roomRepository.findByIdAndIsDeletedFalse(id)
         .orElseThrow(() -> new ResourceNotFoundException("Room not found with id: " + id));
     room.setDeleted(true);
-    room.setDeletedAt(new java.util.Date());
+    room.setDeletedAt(new Date());
     roomRepository.save(room);
   }
 
@@ -200,7 +220,7 @@ public class RoomServiceImpl implements RoomService {
     if (!invalid.isEmpty()) {
       throw new InvalidRoomIdsException("Some room IDs are invalid or already deleted", invalid);
     }
-    roomRepository.softDeleteByIds(ids, new java.util.Date());
+    roomRepository.softDeleteByIds(ids, new Date());
   }
 
   @Override
@@ -250,60 +270,38 @@ public class RoomServiceImpl implements RoomService {
     if (room == null || !room.isAvailable()) {
       return false;
     }
+
     List<Booking> conflictingBookings = bookingRepository.findConflictingBookings(
         List.of(roomId), checkIn, checkOut);
     return conflictingBookings.isEmpty();
   }
 
   public List<Room> getAvailableRooms(Long hotelId, LocalDate checkIn, LocalDate checkOut) {
-    List<Room> allRooms = roomRepository.findByHotelIdAndIsDeletedFalseAndAvailableTrue(hotelId);
-    if (allRooms.isEmpty()) {
-      return new ArrayList<>();
-    }
-    List<Long> roomIds = allRooms.stream().map(Room::getId).collect(Collectors.toList());
-    List<Booking> conflictingBookings = bookingRepository.findConflictingBookings(
-        roomIds, checkIn, checkOut);
-    Set<Long> unavailableRoomIds = conflictingBookings.stream()
-        .flatMap(booking -> booking.getRooms().stream())
-        .map(Room::getId)
-        .collect(Collectors.toSet());
-    return allRooms.stream()
-        .filter(room -> !unavailableRoomIds.contains(room.getId()))
-        .toList();
+    return roomRepository.findAvailableRooms(hotelId, checkIn, checkOut);
   }
 
   @Override
   public List<RoomResponse> getAvailableRoomsWithHotelName(Long hotelId, LocalDate checkIn,
       LocalDate checkOut) {
-    List<Room> availableRooms = getAvailableRooms(hotelId, checkIn, checkOut);
-    return availableRooms.stream()
+    return getAvailableRooms(hotelId, checkIn, checkOut)
+        .stream()
         .map(roomMapper::toRoomResponseDTO)
         .toList();
   }
 
+  @Override
   public List<LocalDate> getUnavailableDates(Long roomId, LocalDate from, LocalDate to) {
-    List<Booking> bookings = bookingRepository.findBookingsByRoomIdAndDateRange(
-        roomId, from, to);
-    List<LocalDate> unavailableDates = new ArrayList<>();
-    for (Booking booking : bookings) {
-      LocalDate current = booking.getCheckInDate();
-      while (!current.isAfter(booking.getCheckOutDate().minusDays(1))) {
-        if (!current.isBefore(from) && !current.isAfter(to)) {
-          unavailableDates.add(current);
-        }
-        current = current.plusDays(1);
-      }
-    }
-    return unavailableDates;
+    return List.of();
   }
+
 
   @Transactional
   public boolean reserveRooms(List<Long> roomIds, LocalDate checkIn, LocalDate checkOut) {
-    for (Long roomId : roomIds) {
-      if (!isRoomAvailable(roomId, checkIn, checkOut)) {
-        log.warn("Room {} is not available for dates {} to {}", roomId, checkIn, checkOut);
-        return false;
-      }
+    List<Booking> conflictingBookings = bookingRepository.findConflictingBookings(roomIds, checkIn,
+        checkOut);
+    if (!conflictingBookings.isEmpty()) {
+      log.warn("Some rooms are not available for {} to {}", checkIn, checkOut);
+      return false;
     }
     return true;
   }
@@ -314,13 +312,9 @@ public class RoomServiceImpl implements RoomService {
 
   public boolean areRoomsAvailableForBooking(List<Long> roomIds, LocalDate checkIn,
       LocalDate checkOut) {
-    for (Long roomId : roomIds) {
-      if (!isRoomAvailable(roomId, checkIn, checkOut)) {
-        return false;
-      }
-    }
-    return true;
+    return roomIds.stream().allMatch(id -> isRoomAvailable(id, checkIn, checkOut));
   }
+
 
   @Override
   public Page<RoomResponse> getAllRoomsWithAuthorization(Pageable pageable, boolean deleted) {
@@ -334,7 +328,7 @@ public class RoomServiceImpl implements RoomService {
           : roomRepository.findAllByHotelManagedByUserAndIsDeletedFalse(currentUser, pageable);
       return rooms.map(roomMapper::toRoomResponseDTO);
     } else {
-      return Page.empty(pageable);
+      throw new ForBiddenException("You do not have permission to access these rooms");
     }
   }
 
@@ -345,11 +339,10 @@ public class RoomServiceImpl implements RoomService {
     if (authorizationUtils.canAccessAllData()) {
       return getRoomByIdWithHotelName(id);
     } else if (authorizationUtils.isManager() || authorizationUtils.isStaff()) {
-      Optional<Room> room = roomRepository.findByIdAndHotelManagedByUserAndIsDeletedFalse(id,
-          currentUser);
-      return room.map(roomMapper::toRoomResponseDTO);
+      return roomRepository.findByIdAndHotelManagedByUserAndIsDeletedFalse(id, currentUser)
+          .map(roomMapper::toRoomResponseDTO);
     } else {
-      return Optional.empty();
+      throw new ForBiddenException("You do not have permission to access this room");
     }
   }
 }
