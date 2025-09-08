@@ -4,7 +4,6 @@ import com.booking.booking.controller.response.BookingResponse;
 import com.booking.booking.controller.response.PageResponse;
 import com.booking.booking.controller.response.ResponseSuccess;
 import com.booking.booking.dto.BookingDTO;
-import com.booking.booking.mapper.BookingMapper;
 import com.booking.booking.service.BookingService;
 import com.booking.booking.util.AuthorizationUtils;
 import com.booking.booking.util.PermissionMatrix;
@@ -37,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'STAFF')")
 public class DashboardBookingController {
 
-  private final BookingMapper bookingMapper;
   private final BookingService bookingService;
   private final AuthorizationUtils authorizationUtils;
 
