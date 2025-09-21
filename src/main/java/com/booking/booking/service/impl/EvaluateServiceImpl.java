@@ -1,11 +1,10 @@
 package com.booking.booking.service.impl;
 
-import com.booking.booking.controller.request.EvaluateRequest;
+import com.booking.booking.dto.request.EvaluateRequest;
 import com.booking.booking.exception.BadRequestException;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.mapper.EvaluateMapper;
 import com.booking.booking.model.Evaluate;
-import com.booking.booking.model.Room;
 import com.booking.booking.model.User;
 import com.booking.booking.repository.EvaluateRepository;
 import com.booking.booking.repository.RoomRepository;

@@ -1,15 +1,15 @@
 package com.booking.booking.service;
 
-import com.booking.booking.controller.request.ChangePasswordRequest;
-import com.booking.booking.controller.request.ForgetPasswordRequest;
-import com.booking.booking.controller.request.UserCreationRequest;
-import com.booking.booking.controller.request.UserPasswordRequest;
-import com.booking.booking.controller.request.UserUpdateRequest;
-import com.booking.booking.controller.response.PageResponse;
-import com.booking.booking.controller.response.UserPageResponse;
-import com.booking.booking.controller.response.UserResponse;
+import com.booking.booking.dto.request.ChangePasswordRequest;
+import com.booking.booking.dto.request.ForgetPasswordRequest;
+import com.booking.booking.dto.request.UserCreationRequest;
+import com.booking.booking.dto.request.UserPasswordRequest;
+import com.booking.booking.dto.request.UserUpdateRequest;
+import com.booking.booking.dto.response.PageResponse;
+import com.booking.booking.dto.response.UserPageResponse;
+import com.booking.booking.dto.response.UserResponse;
 import java.util.List;
-import org.springframework.data.domain.Page;
+
 import org.springframework.data.domain.Pageable;
 
 public interface UserService {

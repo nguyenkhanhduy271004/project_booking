@@ -1,6 +1,6 @@
 package com.booking.booking.dto;
 
-import com.booking.booking.controller.response.UserResponse;
+import com.booking.booking.dto.response.UserResponse;
 import jakarta.validation.constraints.*;
 import java.util.List;
 import lombok.Data;

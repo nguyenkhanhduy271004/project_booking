@@ -1,6 +1,6 @@
 package com.booking.booking.mapper;
 
-import com.booking.booking.controller.response.VoucherResponse;
+import com.booking.booking.dto.response.VoucherResponse;
 import com.booking.booking.dto.VoucherDTO;
 import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Voucher;

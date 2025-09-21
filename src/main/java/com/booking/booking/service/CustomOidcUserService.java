@@ -39,10 +39,12 @@ public class CustomOidcUserService implements OAuth2UserService<OidcUserRequest,
 
     User user = userRepository.findByEmail(email).orElse(null);
     if (user == null) {
-      user = new User();
-      user.setEmail(email);
-      user.setLastName(name);
-      user.setType(UserType.GUEST);
+      user = User.builder()
+          .email(email)
+          .lastName(name)
+          .type(UserType.GUEST)
+          .build();
+
 
       Role role = roleRepository.findByName("GUEST");
       if (role == null) {

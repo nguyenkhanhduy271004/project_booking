@@ -1,9 +1,9 @@
 package com.booking.booking.controller;
 
-import com.booking.booking.controller.request.VoucherCreateRequest;
-import com.booking.booking.controller.request.VoucherUpdateRequest;
-import com.booking.booking.controller.response.PageResponse;
-import com.booking.booking.controller.response.ResponseSuccess;
+import com.booking.booking.dto.request.VoucherCreateRequest;
+import com.booking.booking.dto.request.VoucherUpdateRequest;
+import com.booking.booking.dto.response.PageResponse;
+import com.booking.booking.dto.response.ResponseSuccess;
 import com.booking.booking.model.Voucher;
 import com.booking.booking.service.VoucherService;
 import jakarta.validation.Valid;
@@ -14,15 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/vouchers")
@@ -30,62 +22,62 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class VoucherController {
 
-  private final VoucherService voucherService;
+    private final VoucherService voucherService;
 
-  @PostMapping
-  public ResponseSuccess createVoucher(@Valid @RequestBody VoucherCreateRequest request) {
+    @PostMapping
+    public ResponseSuccess createVoucher(@Valid @RequestBody VoucherCreateRequest request) {
 
-    voucherService.createVoucher(request);
+        voucherService.createVoucher(request);
 
-    return new ResponseSuccess(HttpStatus.CREATED, "Create a new voucher successfully!");
-  }
+        return new ResponseSuccess(HttpStatus.CREATED, "Create a new voucher successfully!");
+    }
 
-  @PutMapping("/{id}")
-  public ResponseSuccess updateVoucher(@PathVariable Long id, @Valid @RequestBody VoucherUpdateRequest request) {
-    voucherService.updateVoucher(id, request);
+    @PutMapping("/{id}")
+    public ResponseSuccess updateVoucher(@PathVariable Long id, @Valid @RequestBody VoucherUpdateRequest request) {
+        voucherService.updateVoucher(id, request);
 
-    return new ResponseSuccess(HttpStatus.OK, "Update a voucher successfully!");
-  }
+        return new ResponseSuccess(HttpStatus.OK, "Update a voucher successfully!");
+    }
 
-  @GetMapping("/{id}")
-  public ResponseSuccess getVoucherById(@PathVariable Long id) {
+    @GetMapping("/{id}")
+    public ResponseSuccess getVoucherById(@PathVariable Long id) {
 
-    return new ResponseSuccess(HttpStatus.OK, "Get a voucher successfully!",
-        voucherService.getVoucherById(id));
-  }
+        return new ResponseSuccess(HttpStatus.OK, "Get a voucher successfully!",
+                voucherService.getVoucherById(id));
+    }
 
-  @GetMapping("/hotel/{hotelId}")
-  public ResponseSuccess getVoucherByIdHotel(@PathVariable Long hotelId) {
+    @GetMapping("/hotel/{hotelId}")
+    public ResponseSuccess getVoucherByIdHotel(@PathVariable Long hotelId) {
 
-    return new ResponseSuccess(HttpStatus.OK, "Get a voucher by hotel successfully!",
-        voucherService.getVoucherByHotelId(hotelId));
-  }
+        return new ResponseSuccess(HttpStatus.OK, "Get a voucher by hotel successfully!",
+                voucherService.getVoucherByHotelId(hotelId));
+    }
 
-  @GetMapping
-  public ResponseSuccess getAllVouchers(
-      @RequestParam(defaultValue = "0", required = false) int page,
-      @RequestParam(defaultValue = "10", required = false) int size,
-      @RequestParam(defaultValue = "id", required = false) String sort) {
+    @GetMapping
+    public ResponseSuccess getAllVouchers(
+            @RequestParam(defaultValue = "0", required = false) int page,
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(defaultValue = "id", required = false) String sort) {
 
-    Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
 
-    Page<Voucher> pages = voucherService.getAllVouchers(pageable);
+        Page<Voucher> pages = voucherService.getAllVouchers(pageable);
 
-    PageResponse<?> pageResponse = PageResponse.builder()
-        .pageNo(page)
-        .pageSize(size)
-        .totalPage(pages.getTotalPages())
-        .totalElements(pages.getTotalElements())
-        .items(pages.getContent())
-        .build();
+        PageResponse<?> pageResponse = PageResponse.builder()
+                .pageNo(page)
+                .pageSize(size)
+                .totalPage(pages.getTotalPages())
+                .totalElements(pages.getTotalElements())
+                .items(pages.getContent())
+                .build();
 
-    return new ResponseSuccess(HttpStatus.OK, "Get all vouchers successfully!", pageResponse);
-  }
+        return new ResponseSuccess(HttpStatus.OK, "Get all vouchers successfully!", pageResponse);
+    }
 
-  @DeleteMapping("/{id}")
-  public ResponseSuccess deleteVoucher(@PathVariable long id) {
-    voucherService.deleteVoucher(id);
+    @DeleteMapping("/{id}")
+    public ResponseSuccess deleteVoucher(@PathVariable long id) {
+        voucherService.deleteVoucher(id);
 
-    return new ResponseSuccess(HttpStatus.OK, "Delete a voucher successfully!");
-  }
+        return new ResponseSuccess(HttpStatus.OK, "Delete a voucher successfully!");
+    }
 }

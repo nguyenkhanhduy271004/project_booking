@@ -1,7 +1,7 @@
 package com.booking.booking.mapper;
 
 import com.booking.booking.dto.RoomDTO;
-import com.booking.booking.controller.response.RoomResponse;
+import com.booking.booking.dto.response.RoomResponse;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Room;

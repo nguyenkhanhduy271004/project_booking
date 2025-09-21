@@ -1,6 +1,6 @@
 package com.booking.booking.exception;
 
-import com.booking.booking.controller.response.ResponseFailure;
+import com.booking.booking.dto.response.ResponseFailure;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;

@@ -1,7 +1,7 @@
 package com.booking.booking.service;
 
-import com.booking.booking.controller.request.BookingRequest;
-import com.booking.booking.controller.response.BookingResponse;
+import com.booking.booking.dto.request.BookingRequest;
+import com.booking.booking.dto.response.BookingResponse;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.domain.Page;

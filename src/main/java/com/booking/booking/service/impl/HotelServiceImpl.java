@@ -1,8 +1,8 @@
 package com.booking.booking.service.impl;
 
 import com.booking.booking.common.UserType;
-import com.booking.booking.controller.response.PageResponse;
-import com.booking.booking.controller.response.UserResponse;
+import com.booking.booking.dto.response.PageResponse;
+import com.booking.booking.dto.response.UserResponse;
 import com.booking.booking.dto.HotelDTO;
 import com.booking.booking.exception.BadRequestException;
 import com.booking.booking.exception.InvalidHotelIdsException;

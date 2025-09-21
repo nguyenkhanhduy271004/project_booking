@@ -1,7 +1,7 @@
 package com.booking.booking.service;
 
 
-import com.booking.booking.controller.request.EvaluateRequest;
+import com.booking.booking.dto.request.EvaluateRequest;
 import com.booking.booking.model.Evaluate;
 
 public interface EvaluateService {

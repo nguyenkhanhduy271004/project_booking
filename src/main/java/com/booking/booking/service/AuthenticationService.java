@@ -1,10 +1,10 @@
 package com.booking.booking.service;
 
-import com.booking.booking.controller.request.LoginRequest;
-import com.booking.booking.controller.request.RegisterRequest;
-import com.booking.booking.controller.request.SignInRequest;
-import com.booking.booking.controller.response.LoginResponse;
-import com.booking.booking.controller.response.TokenResponse;
+import com.booking.booking.dto.request.LoginRequest;
+import com.booking.booking.dto.request.RegisterRequest;
+import com.booking.booking.dto.request.SignInRequest;
+import com.booking.booking.dto.response.LoginResponse;
+import com.booking.booking.dto.response.TokenResponse;
 
 public interface AuthenticationService {
 

@@ -1,8 +1,8 @@
 package com.booking.booking.mapper;
 
 import com.booking.booking.common.BookingStatus;
-import com.booking.booking.controller.request.BookingRequest;
-import com.booking.booking.controller.response.BookingResponse;
+import com.booking.booking.dto.request.BookingRequest;
+import com.booking.booking.dto.response.BookingResponse;
 import com.booking.booking.dto.BookingDTO;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.model.Booking;

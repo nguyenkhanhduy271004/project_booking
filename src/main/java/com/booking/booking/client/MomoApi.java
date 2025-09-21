@@ -1,7 +1,7 @@
 package com.booking.booking.client;
 
-import com.booking.booking.controller.request.CreateMomoRequest;
-import com.booking.booking.controller.response.CreateMomoResponse;
+import com.booking.booking.dto.request.CreateMomoRequest;
+import com.booking.booking.dto.response.CreateMomoResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

@@ -1,8 +1,8 @@
 package com.booking.booking.service.impl;
 
 import com.booking.booking.common.UserType;
-import com.booking.booking.controller.request.VoucherCreateRequest;
-import com.booking.booking.controller.request.VoucherUpdateRequest;
+import com.booking.booking.dto.request.VoucherCreateRequest;
+import com.booking.booking.dto.request.VoucherUpdateRequest;
 import com.booking.booking.exception.BadRequestException;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.model.Hotel;

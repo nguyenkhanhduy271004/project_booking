@@ -42,9 +42,6 @@ spring:
   kafka:
     bootstrap-servers: localhost:29092
 
-logging:
-  level:
-    '[org.springframework.security.oauth2]': DEBUG
 
 springdoc:
   api-docs:
@@ -98,3 +95,9 @@ payment:
     command: pay
     orderType: other
 
+
+logging:
+  level:
+    '[org.springframework.security.oauth2]': DEBUG
+    org.apache.kafka: ERROR
+    org.springframework.kafka: WARN

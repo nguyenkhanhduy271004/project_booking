@@ -1,7 +1,7 @@
 package com.booking.booking.service;
 
-import com.booking.booking.controller.request.VoucherCreateRequest;
-import com.booking.booking.controller.request.VoucherUpdateRequest;
+import com.booking.booking.dto.request.VoucherCreateRequest;
+import com.booking.booking.dto.request.VoucherUpdateRequest;
 import com.booking.booking.model.Voucher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

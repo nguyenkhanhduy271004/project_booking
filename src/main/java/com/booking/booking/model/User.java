@@ -24,7 +24,10 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
@@ -36,6 +39,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Entity
 @Table(name = "tbl_user")
 @Slf4j(topic = "UserEntity")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User extends AbstractEntity<Long> implements UserDetails, Serializable {
 
   @Column(name = "first_name", length = 255)

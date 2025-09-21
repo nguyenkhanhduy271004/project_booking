@@ -1,6 +1,6 @@
 package com.booking.booking.service;
 
-import com.booking.booking.controller.request.VerifyAccountInfo;
+import com.booking.booking.dto.request.VerifyAccountInfo;
 import com.booking.booking.model.Booking;
 import com.google.gson.Gson;
 import com.sendgrid.Method;

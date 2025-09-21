@@ -2,12 +2,12 @@ package com.booking.booking.service.impl;
 
 import static com.booking.booking.common.TokenType.REFRESH_TOKEN;
 
-import com.booking.booking.controller.request.LoginRequest;
-import com.booking.booking.controller.request.RegisterRequest;
-import com.booking.booking.controller.request.SignInRequest;
-import com.booking.booking.controller.request.VerifyAccountInfo;
-import com.booking.booking.controller.response.LoginResponse;
-import com.booking.booking.controller.response.TokenResponse;
+import com.booking.booking.dto.request.LoginRequest;
+import com.booking.booking.dto.request.RegisterRequest;
+import com.booking.booking.dto.request.SignInRequest;
+import com.booking.booking.dto.request.VerifyAccountInfo;
+import com.booking.booking.dto.response.LoginResponse;
+import com.booking.booking.dto.response.TokenResponse;
 import com.booking.booking.exception.*;
 import com.booking.booking.mapper.UserMapper;
 import com.booking.booking.model.User;
