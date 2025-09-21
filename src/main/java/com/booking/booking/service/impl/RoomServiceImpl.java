@@ -98,7 +98,7 @@ public class RoomServiceImpl implements RoomService {
 
     Room roomEntity = roomMapper.toRoom(room);
     roomEntity.setServices(room.getServices());
-    roomEntity.setCreatedByUser(userContext.getCurrentUser());
+    roomEntity.setCreatedBy(userContext.getCurrentUser());
 
     return roomRepository.save(roomEntity);
   }
@@ -117,7 +117,7 @@ public class RoomServiceImpl implements RoomService {
     room.setCapacity(updatedRoom.getCapacity());
     room.setServices(updatedRoom.getServices());
     room.setAvailable(updatedRoom.isAvailable());
-    room.setUpdatedByUser(userContext.getCurrentUser());
+    room.setUpdatedBy(userContext.getCurrentUser());
     room.setPricePerNight(updatedRoom.getPricePerNight());
 
     if (images != null && images.length > 0) {

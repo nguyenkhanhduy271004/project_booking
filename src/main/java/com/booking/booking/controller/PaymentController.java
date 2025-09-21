@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,12 +21,14 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @GetMapping("/momo")
+    @PreAuthorize("isAuthenticated()")
     public ResponseSuccess createQRMomo(@RequestParam Long bookingId) {
         return new ResponseSuccess(HttpStatus.OK, "Create Momo QR successfully!",
                 paymentService.createQR(bookingId));
     }
 
     @GetMapping("/vnpay")
+    @PreAuthorize("isAuthenticated()")
     public ResponseSuccess pay(HttpServletRequest request) {
         return new ResponseSuccess(HttpStatus.OK, "Success", paymentService.createVnPayPayment(request));
     }

@@ -56,7 +56,6 @@ public class HotelController {
 
     @Operation(summary = "Search hotel by keyword", description = "API retrieve user from database")
     @GetMapping("/search")
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseSuccess searchHotel(Pageable pageable,
                                        @RequestParam(required = false) String[] hotel) {
         log.info("Search hotel");
@@ -114,7 +113,7 @@ public class HotelController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteHotel(@PathVariable("id") Long id) {
         hotelService.softDeleteHotel(id);
         return new ResponseSuccess(HttpStatus.OK, "Hotel deleted successfully");
@@ -122,7 +121,7 @@ public class HotelController {
 
     @DeleteMapping("/ids")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN','ADMIN')")
     public ResponseSuccess deleteHotels(@RequestBody List<Long> ids) {
         hotelService.softDeleteHotels(ids);
         return new ResponseSuccess(HttpStatus.OK, "Hotels deleted successfully");
@@ -130,7 +129,7 @@ public class HotelController {
 
     @PutMapping("/{id}/restore")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN','ADMIN')")
     public ResponseSuccess restoreHotel(@PathVariable("id") Long id) {
         hotelService.restoreHotel(id);
         return new ResponseSuccess(HttpStatus.OK, "Hotel restored successfully");
@@ -138,7 +137,7 @@ public class HotelController {
 
     @PutMapping("/restore")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN','ADMIN')")
     public ResponseSuccess restoreHotels(@RequestBody List<Long> ids) {
         hotelService.restoreHotels(ids);
         return new ResponseSuccess(HttpStatus.OK, "Hotels restored successfully");
@@ -146,7 +145,7 @@ public class HotelController {
 
     @DeleteMapping("/{id}/permanent")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN','ADMIN')")
     public ResponseSuccess deleteHotelPermanently(@PathVariable("id") Long id) {
         hotelService.deleteHotelPermanently(id);
         return new ResponseSuccess(HttpStatus.OK, "Hotel permanently deleted successfully");
@@ -154,7 +153,7 @@ public class HotelController {
 
     @DeleteMapping("/permanent")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN','ADMIN')")
     public ResponseSuccess deleteHotelsPermanently(@RequestBody List<Long> ids) {
         hotelService.deleteHotelsPermanently(ids);
         return new ResponseSuccess(HttpStatus.OK, "Hotels permanently deleted successfully");

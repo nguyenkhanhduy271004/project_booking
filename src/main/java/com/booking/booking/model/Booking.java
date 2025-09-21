@@ -2,28 +2,18 @@ package com.booking.booking.model;
 
 import com.booking.booking.common.BookingStatus;
 import com.booking.booking.common.PaymentType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Future;
+import lombok.*;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Data
 @Entity
@@ -34,51 +24,52 @@ import lombok.NoArgsConstructor;
 @Table(name = "tbl_booking")
 public class Booking extends AbstractEntity<Long> implements Serializable {
 
-  @Column(nullable = false, unique = true)
-  private String bookingCode;
+    @Column(nullable = false, unique = true)
+    private String bookingCode;
 
-  @ManyToOne
-  @JoinColumn(name = "hotel_id", nullable = false)
-  @com.fasterxml.jackson.annotation.JsonBackReference(value = "hotel-bookings")
-  private Hotel hotel;
+    @ManyToOne
+    @JoinColumn(name = "hotel_id", nullable = false)
+    @JsonBackReference(value = "hotel-bookings")
+    private Hotel hotel;
 
-  @Column(name = "room_id")
-  private Long legacyRoomId;
+    @Column(length = 500)
+    private String notes;
 
-  @ManyToMany
-  @JoinTable(name = "tbl_booking_room", joinColumns = @JoinColumn(name = "booking_id"), inverseJoinColumns = @JoinColumn(name = "room_id"))
-  @Builder.Default
-  private List<Room> rooms = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "guest_id")
+    private User guest;
 
-  @Column(nullable = false)
-  @Future
-  private LocalDate checkInDate;
+    @Column(name = "room_id")
+    private Long legacyRoomId;
 
-  @Column(nullable = false)
-  @Future
-  private LocalDate checkOutDate;
+    @Column(nullable = false)
+    @Future
+    private LocalDate checkInDate;
 
-  @Column(nullable = false)
-  @DecimalMin("0.0")
-  private BigDecimal totalPrice;
+    @Column(nullable = false)
+    @Future
+    private LocalDate checkOutDate;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private BookingStatus status;
+    @Column(nullable = false)
+    @DecimalMin("0.0")
+    private BigDecimal totalPrice;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private PaymentType paymentType;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BookingStatus status;
 
-  @Column(length = 500)
-  private String notes;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentType paymentType;
 
-  @ManyToOne
-  @JoinColumn(name = "guest_id")
-  private User guest;
+    @ManyToMany
+    @JoinTable(name = "tbl_booking_room", joinColumns = @JoinColumn(name = "booking_id"), inverseJoinColumns = @JoinColumn(name = "room_id"))
+    @Builder.Default
+    private List<Room> rooms = new ArrayList<>();
 
-  @AssertTrue(message = "Check-out date must be after check-in date")
-  private boolean isValidDateRange() {
-    return checkOutDate != null && checkInDate != null && checkOutDate.isAfter(checkInDate);
-  }
+
+    @AssertTrue(message = "Check-out date must be after check-in date")
+    private boolean isValidDateRange() {
+        return checkOutDate != null && checkInDate != null && checkOutDate.isAfter(checkInDate);
+    }
 }

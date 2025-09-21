@@ -68,7 +68,7 @@ public class RoomController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseSuccess createRoom(
             @RequestPart(value = "room") @Valid RoomDTO room,
             @RequestPart(value = "images", required = false) MultipartFile[] images) {
@@ -89,7 +89,7 @@ public class RoomController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteRoom(@PathVariable("id") @Min(0) Long id) {
         roomService.softDeleteRoom(id);
         return new ResponseSuccess(HttpStatus.OK, "Room deleted successfully");
@@ -97,7 +97,7 @@ public class RoomController {
 
     @DeleteMapping("/ids")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteRooms(@RequestBody List<Long> ids) {
         roomService.softDeleteRooms(ids);
         return new ResponseSuccess(HttpStatus.OK, "Rooms deleted successfully");
@@ -105,7 +105,7 @@ public class RoomController {
 
     @PutMapping("/{id}/restore")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess restoreRoom(@PathVariable("id") @Min(0) Long id) {
         roomService.restoreRoom(id);
         return new ResponseSuccess(HttpStatus.OK, "Room restored successfully");
@@ -113,7 +113,7 @@ public class RoomController {
 
     @PutMapping("/restore")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess restoreRooms(@RequestBody List<Long> ids) {
         roomService.restoreRooms(ids);
         return new ResponseSuccess(HttpStatus.OK, "Rooms restored successfully");
@@ -121,7 +121,7 @@ public class RoomController {
 
     @DeleteMapping("/{id}/permanent")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteRoomPermanently(@PathVariable("id") @Min(0) Long id) {
         roomService.deleteRoomPermanently(id);
         return new ResponseSuccess(HttpStatus.OK, "Room permanently deleted successfully");
@@ -129,7 +129,7 @@ public class RoomController {
 
     @DeleteMapping("/permanent")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteRoomsPermanently(@RequestBody List<Long> ids) {
         roomService.deleteRoomsPermanently(ids);
         return new ResponseSuccess(HttpStatus.OK, "Rooms permanently deleted successfully");

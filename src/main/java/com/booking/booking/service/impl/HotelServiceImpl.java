@@ -173,7 +173,7 @@ public class HotelServiceImpl implements HotelService {
 
     User currentUser = userContext.getCurrentUser();
     if (currentUser != null) {
-      hotel.setUpdatedByUser(currentUser);
+      hotel.setUpdatedBy(currentUser);
     }
 
     hotelRepository.save(hotel);

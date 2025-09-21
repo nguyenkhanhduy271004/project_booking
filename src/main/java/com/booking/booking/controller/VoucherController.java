@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,6 +26,7 @@ public class VoucherController {
     private final VoucherService voucherService;
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseSuccess createVoucher(@Valid @RequestBody VoucherCreateRequest request) {
 
         voucherService.createVoucher(request);
@@ -33,6 +35,7 @@ public class VoucherController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseSuccess updateVoucher(@PathVariable Long id, @Valid @RequestBody VoucherUpdateRequest request) {
         voucherService.updateVoucher(id, request);
 
@@ -75,6 +78,7 @@ public class VoucherController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseSuccess deleteVoucher(@PathVariable long id) {
         voucherService.deleteVoucher(id);
 

@@ -59,15 +59,6 @@ public class Room extends AbstractEntity<Long> implements Serializable {
   @Builder.Default
   private List<Evaluate> evaluates = new ArrayList<>();
 
-  @ManyToOne
-  @JoinColumn(name = "created_by")
-  @JsonBackReference(value = "room-created-by")
-  private User createdByUser;
-
-  @ManyToOne
-  @JoinColumn(name = "updated_by")
-  @JsonBackReference(value = "room-updated-by")
-  private User updatedByUser;
 
   @ElementCollection
   @CollectionTable(name = "room_services", joinColumns = @JoinColumn(name = "room_id"))

@@ -1,7 +1,7 @@
 package com.booking.booking.mapper;
 
-import com.booking.booking.dto.response.VoucherResponse;
 import com.booking.booking.dto.VoucherDTO;
+import com.booking.booking.dto.response.VoucherResponse;
 import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Voucher;
 import com.booking.booking.repository.HotelRepository;
@@ -50,7 +50,7 @@ public class VoucherMapper {
                     .orElseThrow(() -> new RuntimeException("Hotel not found with id: " + voucherDTO.getHotelId()));
             existingVoucher.setHotel(hotel);
         } else {
-            existingVoucher.setHotel(null); // System-wide voucher
+            existingVoucher.setHotel(null);
         }
     }
 }

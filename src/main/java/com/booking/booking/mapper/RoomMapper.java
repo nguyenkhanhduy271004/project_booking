@@ -14,39 +14,39 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RoomMapper {
 
-  private final HotelRepository hotelRepository;
-  private final ModelMapper modelMapper;
+    private final HotelRepository hotelRepository;
+    private final ModelMapper modelMapper;
 
-  public Room toRoom(RoomDTO roomDTO) {
+    public Room toRoom(RoomDTO roomDTO) {
 
-    Hotel hotel = hotelRepository.findById(roomDTO.getHotelId())
-        .orElseThrow(() -> new ResourceNotFoundException("Hotel not found"));
+        Hotel hotel = hotelRepository.findById(roomDTO.getHotelId())
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found"));
 
-    Room room = modelMapper.map(roomDTO, Room.class);
-    room.setId(null);
-    room.setHotel(hotel);
-    return room;
-  }
+        Room room = modelMapper.map(roomDTO, Room.class);
+        room.setId(null);
+        room.setHotel(hotel);
+        return room;
+    }
 
-  public RoomResponse toRoomResponseDTO(Room room) {
-    return RoomResponse.builder()
-        .id(room.getId())
-        .typeRoom(room.getTypeRoom())
-        .capacity(room.getCapacity())
-        .pricePerNight(room.getPricePerNight())
-        .available(room.isAvailable())
-        .listImageUrl(room.getListImageUrl())
-        .hotelId(room.getHotel() != null ? room.getHotel().getId() : null)
-        .hotelName(room.getHotel() != null ? room.getHotel().getName() : null)
-        .services(room.getServices())
-        .createdAt(room.getCreatedAt())
-        .updatedAt(room.getUpdatedAt())
-        .createdByUser(room.getCreatedByUser() != null
-            ? room.getCreatedByUser().getFirstName() + " " + room.getCreatedByUser().getLastName()
-            : null)
-        .updatedByUser(room.getUpdatedByUser() != null
-            ? room.getUpdatedByUser().getFirstName() + " " + room.getUpdatedByUser().getLastName()
-            : null)
-        .build();
-  }
+    public RoomResponse toRoomResponseDTO(Room room) {
+        return RoomResponse.builder()
+                .id(room.getId())
+                .typeRoom(room.getTypeRoom())
+                .capacity(room.getCapacity())
+                .pricePerNight(room.getPricePerNight())
+                .available(room.isAvailable())
+                .listImageUrl(room.getListImageUrl())
+                .hotelId(room.getHotel() != null ? room.getHotel().getId() : null)
+                .hotelName(room.getHotel() != null ? room.getHotel().getName() : null)
+                .services(room.getServices())
+                .createdAt(room.getCreatedAt())
+                .updatedAt(room.getUpdatedAt())
+                .createdByUser(room.getCreatedBy() != null
+                        ? room.getCreatedBy().getFirstName() + " " + room.getCreatedBy().getLastName()
+                        : null)
+                .updatedByUser(room.getUpdatedBy() != null
+                        ? room.getUpdatedBy().getFirstName() + " " + room.getUpdatedBy().getLastName()
+                        : null)
+                .build();
+    }
 }

@@ -74,7 +74,7 @@ public class UserController {
 
     @Operation(summary = "Search user by keyword", description = "API retrieve user from database")
     @GetMapping("/search")
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess searchUser(Pageable pageable,
                                       @RequestParam(required = false) String[] user) {
         log.info("Search user");
@@ -127,7 +127,7 @@ public class UserController {
     @Operation(summary = "Get user detail", description = "API retrieve user detail by ID from database")
     @GetMapping("/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess getUserDetail(@PathVariable @Min(1) Long userId) {
         log.info("Get user detail by ID: {}", userId);
 
@@ -138,7 +138,7 @@ public class UserController {
     @Operation(summary = "Create User", description = "API add new user to database")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess createUser(@Valid @RequestBody UserCreationRequest request) {
         log.info("Create User: {}", request);
 
@@ -246,7 +246,7 @@ public class UserController {
 
     @Operation(summary = "Delete user", description = "API activate user from database")
     @DeleteMapping("/{userId}")
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteUser(@PathVariable @Min(1) Long userId) {
         log.info("Deleting user: {}", userId);
 
@@ -257,7 +257,7 @@ public class UserController {
 
     @Operation(summary = "Delete users", description = "API activate user from database")
     @DeleteMapping("/ids")
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteUsers(@RequestBody List<Long> userIds) {
         log.info("Deleting users: {}", userIds);
 
@@ -267,7 +267,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}/permanent")
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteUserPermanently(@PathVariable @Min(1) Long userId) {
         log.info("Deleting user permanently: {}", userId);
         userService.deletePermanentlyById(userId);
@@ -275,7 +275,7 @@ public class UserController {
     }
 
     @DeleteMapping("/permanent")
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteUsersPermanently(@RequestBody List<Long> userIds) {
         log.info("Deleting users permanently: {}", userIds);
         userService.deletePermanentlyByIds(userIds);
@@ -284,7 +284,7 @@ public class UserController {
 
     @Operation(summary = "Restore user", description = "API activate user from database")
     @PutMapping("/{userId}/restore")
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess restoreUser(@PathVariable @Min(1) Long userId) {
         log.info("Deleting user: {}", userId);
 
@@ -295,7 +295,7 @@ public class UserController {
 
     @Operation(summary = "Restore users", description = "API activate user from database")
     @PutMapping("/restore")
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess restoreUsers(@RequestBody List<Long> userIds) {
         log.info("Restore users: {}", userIds);
 

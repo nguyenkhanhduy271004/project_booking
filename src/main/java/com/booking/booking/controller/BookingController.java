@@ -60,7 +60,7 @@ public class BookingController {
     @Operation(summary = "Get Booking By Id", description = "API to retrieve booking details by ID")
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'STAFF', 'GUEST')")
     public ResponseSuccess getBookingById(@PathVariable Long id) {
         BookingResponse response = bookingService.getBookingById(id);
         return new ResponseSuccess(HttpStatus.OK, "Booking retrieved successfully", response);
@@ -97,7 +97,7 @@ public class BookingController {
     @Operation(summary = "Restore Booking", description = "API to restore a soft-deleted booking by ID")
     @PutMapping("/{id}/restore")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseSuccess restoreBooking(@PathVariable Long id) {
         bookingService.restoreBooking(id);
         return new ResponseSuccess(HttpStatus.OK, "Booking restored successfully");
@@ -106,7 +106,7 @@ public class BookingController {
     @Operation(summary = "Restore Bookings", description = "API to restore multiple soft-deleted bookings by IDs")
     @PutMapping("/restore")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseSuccess restoreBookings(@RequestBody List<Long> ids) {
         bookingService.restoreBookings(ids);
         return new ResponseSuccess(HttpStatus.OK, "Bookings restored successfully");
@@ -115,7 +115,7 @@ public class BookingController {
     @Operation(summary = "Delete Booking Permanently", description = "API to permanently delete a booking by ID")
     @DeleteMapping("/{id}/permanent")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
     public ResponseSuccess deleteBookingPermanently(@PathVariable Long id) {
         bookingService.deleteBookingPermanently(id);
         return new ResponseSuccess(HttpStatus.NO_CONTENT, "Booking permanently deleted");
@@ -124,7 +124,7 @@ public class BookingController {
     @Operation(summary = "Delete Bookings Permanently", description = "API to permanently delete multiple bookings by IDs")
     @DeleteMapping("/permanent")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
     public ResponseSuccess deleteBookingsPermanently(@RequestBody List<Long> ids) {
         bookingService.deleteBookingsPermanently(ids);
         return new ResponseSuccess(HttpStatus.NO_CONTENT, "Bookings permanently deleted");
