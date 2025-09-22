@@ -50,7 +50,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     List<String> authorities = new ArrayList<>();
     try {
-      // Thực hiện xác thực với username và password
       Authentication authenticate = authenticationManager.authenticate(
           new UsernamePasswordAuthenticationToken(loginRequest.getUsername(),
               loginRequest.getPassword()));
@@ -62,7 +61,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
       SecurityContextHolder.getContext().setAuthentication(authenticate);
     } catch (BadCredentialsException | DisabledException e) {
       log.error("errorMessage: {}", e.getMessage());
-      throw new AccessDeniedException("Username or password is not correct");
+      throw new AccessDeniedException(e.getMessage());
     }
 
     String accessToken = jwtService.generateAccessToken(loginRequest.getUsername(), authorities);
