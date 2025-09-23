@@ -39,9 +39,37 @@ spring:
 
   devtools:
     add-properties: true
+    restart:
+      enabled: false
 
   kafka:
     bootstrap-servers: localhost:29092
+
+  ai:
+    openai:
+      api-key: "dummy"
+      base-url: http://localhost:11434
+      embedding:
+        options:
+          model: nomic-embed-text
+      chat:
+        options:
+          model: mistral
+
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 768
+        index-name: hotel_rag_index
+        initialize-schema: true
+        remove-existing-vector-store-table: false
+        schema-validation: false
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=30m
 
 springdoc:
   api-docs:
