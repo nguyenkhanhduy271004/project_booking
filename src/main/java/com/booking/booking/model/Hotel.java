@@ -1,7 +1,7 @@
 package com.booking.booking.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,17 +11,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Data
 @Entity
-@AllArgsConstructor
+@Table(name = "tbl_hotel")
+@Data
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @EqualsAndHashCode(callSuper = true)
-@Table(name = "tbl_hotel")
 public class Hotel extends AbstractEntity<Long> implements Serializable {
 
-    @Column(name = "name", nullable = false)
+    @Column(nullable = false)
     private String name;
+
     private int totalRooms;
     private String imageUrl;
     private String district;
@@ -43,7 +44,9 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
     @Builder.Default
     private List<Booking> bookings = new ArrayList<>();
 
-    @OneToMany(mappedBy = "hotel")
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("staff-hotel")
+    @Builder.Default
     private List<User> staffs = new ArrayList<>();
 
     @ElementCollection
@@ -52,11 +55,8 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
     @Builder.Default
     private List<String> services = new ArrayList<>();
 
-    
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "managed_by")
-    @JsonBackReference(value = "hotel-managed-by")
-    private User managedByUser;
-
+    @JsonIgnore
+    private User manager;
 }

@@ -42,10 +42,11 @@ public class RoomController {
     public ResponseSuccess getAllRooms(
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
-            @RequestParam(defaultValue = "id", required = false) String sort) {
+            @RequestParam(defaultValue = "id", required = false) String sort,
+            @RequestParam(defaultValue = "false", required = false) boolean deleted) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
         Page<RoomResponse> rooms = roomService.getAllRoomsWithHotelName(pageable,
-                false);
+                deleted);
 
         PageResponse<?> response = PageResponse.builder()
                 .pageNo(pageable.getPageNumber())
@@ -66,26 +67,19 @@ public class RoomController {
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
-    public ResponseSuccess createRoom(
-            @RequestPart(value = "room") @Valid RoomDTO room,
-            @RequestPart(value = "images", required = false) MultipartFile[] images) {
-        RoomResponse created = roomService.createRoomWithHotelName(room, images);
-        return new ResponseSuccess(HttpStatus.CREATED, "Room created successfully", created);
-    }
-
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseSuccess updateRoom(
-            @PathVariable("id") @Min(0) Long id,
-            @Valid @RequestPart RoomDTO room,
-            @RequestPart(value = "images", required = false) MultipartFile[] images) {
-        RoomResponse updated = roomService.updateRoomWithHotelName(id, room, images);
+            @PathVariable Long id,
+            @RequestPart(value = "room") @Valid RoomDTO updatedRoom,
+            @RequestPart(value = "images", required = false) MultipartFile[] images,
+            @RequestPart(value = "keepImages", required = false) String keepImagesJson) {
+
+        RoomResponse updated = roomService.updateRoom(id, updatedRoom, images, keepImagesJson);
         return new ResponseSuccess(HttpStatus.OK, "Room updated successfully", updated);
     }
+
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)

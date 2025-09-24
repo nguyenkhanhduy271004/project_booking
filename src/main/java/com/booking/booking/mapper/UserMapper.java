@@ -5,7 +5,6 @@ import com.booking.booking.common.UserStatus;
 import com.booking.booking.common.UserType;
 import com.booking.booking.dto.request.RegisterRequest;
 import com.booking.booking.dto.request.UserCreationRequest;
-import com.booking.booking.dto.request.UserUpdateRequest;
 import com.booking.booking.dto.response.UserResponse;
 import com.booking.booking.exception.BadRequestException;
 import com.booking.booking.exception.ResourceNotFoundException;
@@ -67,6 +66,7 @@ public class UserMapper {
         user.setGender(Gender.valueOf(registerRequest.getGender()));
         user.setPhone(registerRequest.getPhoneNumber());
         user.setType(UserType.GUEST);
+        user.setStatus(UserStatus.INACTIVE);
 
         Role role = roleRepository.findByName("GUEST");
         if (role == null) {
@@ -90,12 +90,14 @@ public class UserMapper {
         newUser.setPhone(req.getPhone());
         newUser.setUsername(req.getUsername());
         newUser.setType(UserType.valueOf(req.getType()));
-        newUser.setStatus(UserStatus.NONE);
+        newUser.setStatus(UserStatus.INACTIVE);
         newUser.setPassword(passwordEncoder.encode(req.getPassword()));
 
-        Hotel hotel = hotelRepository.findById(req.getHotelId()).orElseThrow(() -> new ResourceNotFoundException("Hotel not found"));
+        if (req.getHotelId() != null) {
+            Hotel hotel = hotelRepository.findById(req.getHotelId()).orElseThrow(() -> new ResourceNotFoundException("Hotel not found"));
 
-        newUser.setHotel(hotel);
+            newUser.setHotel(hotel);
+        }
 
         Role role = roleRepository.findByName(req.getType());
         if (role == null) {

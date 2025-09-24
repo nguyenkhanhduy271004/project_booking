@@ -44,13 +44,13 @@ public class HotelMapper {
             throw new ResourceNotFoundException("User is not manager");
         }
 
-        Optional<Hotel> existingHotel = hotelRepository.findByManagedByUserAndIsDeletedFalse(manager);
+        Optional<Hotel> existingHotel = hotelRepository.findByManagerAndIsDeletedFalse(manager);
 
         if (existingHotel.isPresent()) {
             throw new ResourceNotFoundException("One manager only can manage one hotel");
         }
 
-        newHotel.setManagedByUser(manager);
+        newHotel.setManager(manager);
 
         newHotel.setCreatedBy(currentUser);
 
@@ -81,12 +81,12 @@ public class HotelMapper {
                 throw new ResourceNotFoundException("User is not manager");
             }
 
-            Optional<Hotel> existingHotel = hotelRepository.findByManagedByUserAndIsDeletedFalse(manager);
+            Optional<Hotel> existingHotel = hotelRepository.findByManagerAndIsDeletedFalse(manager);
             if (existingHotel.isPresent() && !existingHotel.get().getId().equals(hotel.getId())) {
                 throw new ResourceNotFoundException("One manager only can manage one hotel");
             }
 
-            hotel.setManagedByUser(manager);
+            hotel.setManager(manager);
         }
         hotel.setUpdatedBy(currentUser);
     }

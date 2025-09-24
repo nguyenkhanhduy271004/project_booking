@@ -37,11 +37,12 @@ public class HotelController {
     public ResponseSuccess getAllHotels(
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
-            @RequestParam(defaultValue = "id", required = false) String sort) {
+            @RequestParam(defaultValue = "id", required = false) String sort,
+            @RequestParam(defaultValue = "false", required = false) boolean deleted) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
-        Page<HotelDTO> hotelPage = hotelService.getAllHotels(pageable,
-                        false)
+        Page<HotelDTO> hotelPage =
+                hotelService.getAllHotels(pageable, deleted)
                 .map(hotelMapper::toDTO);
 
         PageResponse<?> response = PageResponse.builder()
@@ -57,7 +58,8 @@ public class HotelController {
     @Operation(summary = "Search hotel by keyword", description = "API retrieve user from database")
     @GetMapping("/search")
     public ResponseSuccess searchHotel(Pageable pageable,
-                                       @RequestParam(required = false) String[] hotel) {
+                                       @RequestParam(required = false)
+                                       String[] hotel) {
         log.info("Search hotel");
 
         return new ResponseSuccess(HttpStatus.OK, "Search users successfully",

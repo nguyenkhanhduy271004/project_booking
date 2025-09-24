@@ -49,7 +49,7 @@ public class VoucherDTO {
 
     private Integer usedCount;
 
-    private Long hotelId; // null for system-wide vouchers
+    private Long hotelId;
 
     private boolean isActive;
 

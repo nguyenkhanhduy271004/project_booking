@@ -40,10 +40,10 @@ public class VoucherServiceImpl implements VoucherService {
           .orElseThrow(() -> new ResourceNotFoundException(
               "Hotel not found with id: " + request.getHotelId()));
     } else {
-      hotel = hotelRepository.findByManagedByUserAndIsDeletedFalse(user)
+      hotel = hotelRepository.findByManagerAndIsDeletedFalse(user)
           .orElseThrow(() -> new ResourceNotFoundException("Hotel not found for current user"));
 
-      if (!user.getId().equals(hotel.getManagedByUser().getId())) {
+      if (!user.getId().equals(hotel.getManager().getId())) {
         log.warn("User {} is not authorized to create voucher for hotel {}", user.getId(),
             hotel.getId());
         throw new BadRequestException("You are not authorized to create voucher for this hotel");
@@ -78,7 +78,7 @@ public class VoucherServiceImpl implements VoucherService {
     Hotel hotel = existVoucher.getHotel();
 
     if (!UserType.ADMIN.equals(user.getType()) &&
-        !user.getId().equals(hotel.getManagedByUser().getId())) {
+        !user.getId().equals(hotel.getManager().getId())) {
       throw new BadRequestException("You are not authorized to update this voucher");
     }
 
@@ -108,7 +108,7 @@ public class VoucherServiceImpl implements VoucherService {
     Hotel hotel = existVoucher.getHotel();
 
     if (!UserType.ADMIN.equals(user.getType()) &&
-        !user.getId().equals(hotel.getManagedByUser().getId())) {
+        !user.getId().equals(hotel.getManager().getId())) {
       throw new BadRequestException("You are not authorized to delete this voucher");
     }
     voucherRepository.deleteById(existVoucher.getId());

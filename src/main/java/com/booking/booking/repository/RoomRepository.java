@@ -38,17 +38,17 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
 
   Page<Room> findAllByIsDeletedTrue(Pageable pageable);
 
-  @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.isDeleted = false")
+  @Query("SELECT r FROM Room r WHERE r.hotel.manager = :managedByUser AND r.isDeleted = false")
   Page<Room> findAllByHotelManagedByUserAndIsDeletedFalse(
-      @Param("managedByUser") com.booking.booking.model.User managedByUser,
+      @Param("managedByUser") User managedByUser,
       Pageable pageable);
 
-  @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.isDeleted = true")
+  @Query("SELECT r FROM Room r WHERE r.hotel.manager = :managedByUser AND r.isDeleted = true")
   Page<Room> findAllByHotelManagedByUserAndIsDeletedTrue(
       @Param("managedByUser") User managedByUser,
       Pageable pageable);
 
-  @Query("SELECT r FROM Room r WHERE r.hotel.managedByUser = :managedByUser AND r.id = :id AND r.isDeleted = false")
+  @Query("SELECT r FROM Room r WHERE r.hotel.manager = :managedByUser AND r.id = :id AND r.isDeleted = false")
   Optional<Room> findByIdAndHotelManagedByUserAndIsDeletedFalse(
       @Param("id") Long id,
       @Param("managedByUser") User managedByUser);

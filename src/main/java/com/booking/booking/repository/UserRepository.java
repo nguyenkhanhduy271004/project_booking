@@ -41,6 +41,9 @@ public interface UserRepository extends JpaRepository<User, Long>,
 
   User findByUsernameAndIsDeletedFalse(String username);
 
+  @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.username = :username AND u.isDeleted = false")
+  User findByUsernameAndIsDeletedFalseWithRoles(@Param("username") String username);
+
   Optional<User> findByUsername(String username);
 
   Optional<User> findByEmail(String username);
@@ -67,7 +70,8 @@ public interface UserRepository extends JpaRepository<User, Long>,
   int restoreDeletedByIds(@Param("ids") List<Long> ids);
 
 
-  List<User> findAllByType(UserType type);
+  @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.type = :type AND u.isDeleted = false")
+  List<User> findAllByType(@Param("type") UserType type);
 
   @Query("SELECT u FROM User u WHERE u.hotel.id = :hotelId AND u.type = 'STAFF' OR u.type = 'GUEST'")
   Page<User> findUserForManager(@Param("hotelId") Long id, Pageable pageable);

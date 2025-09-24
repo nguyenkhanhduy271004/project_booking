@@ -30,6 +30,18 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
+        query:
+          in_clause_parameter_padding: true
 
   sendgrid:
     api-key: ${SENDGRID_API_KEY}
@@ -125,6 +137,9 @@ payment:
 
 logging:
   level:
-    '[org.springframework.security.oauth2]': DEBUG
-    org.apache.kafka: ERROR
-    org.springframework.kafka: WARN
+    root: WARN
+    org.springframework.boot: INFO
+    org.springframework.security: INFO
+    org.hibernate: WARN
+
+
