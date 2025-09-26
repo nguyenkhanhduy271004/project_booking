@@ -30,13 +30,5 @@ public class RAGConfiguration {
         return executor;
     }
 
-    @Bean
-    public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
-        cacheManager.setCaffeine(Caffeine.newBuilder()
-                .maximumSize(500)
-                .expireAfterWrite(30, TimeUnit.MINUTES)
-                .recordStats());
-        return cacheManager;
-    }
+
 }

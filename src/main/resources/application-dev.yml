@@ -118,9 +118,9 @@ booking:
 
 momo:
   partner-code: MOMONPMB20210629
-  return-url: http://localhost:8080/payment/momo-return
+  return-url: http://localhost:8080/api/payment/momo-return
   end-point: https://test-payment.momo.vn/v2/gateway/api
-  ipn-url: http://localhost:8080/payment/momo-ipn
+  ipn-url: http://localhost:8080/api/payment/momo-ipn
   access-key: ${MOMO_ACCESS_KEY}
   secret-key: ${MOMO_SECRET_KEY}
   request-type: captureWallet

@@ -42,7 +42,7 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/payment/vnpay-return",
+            "/api/payment/**",
             "/api/ai-chat/**"
     };
 

@@ -28,8 +28,43 @@ public class AIChatController {
 
     @GetMapping("/reindex")
     public ResponseEntity<String> reindex() {
+        long startTime = System.currentTimeMillis();
         hotelRAGService.indexAllHotels();
-        return ResponseEntity.ok("Đã reindex khách sạn vào vector store.");
+        long endTime = System.currentTimeMillis();
+        return ResponseEntity.ok("Đã reindex khách sạn vào vector store trong " + (endTime - startTime) + "ms");
+    }
+
+    @GetMapping("/warmup")
+    public ResponseEntity<Map<String, Object>> warmupCache() {
+        long startTime = System.currentTimeMillis();
+        
+        // Warm up với các câu hỏi phổ biến
+        String[] commonQuestions = {
+            "khách sạn ở hà nội",
+            "khách sạn ở sài gòn", 
+            "khách sạn ở đà nẵng",
+            "khách sạn giá rẻ",
+            "khách sạn 5 sao"
+        };
+        
+        int totalWarmed = 0;
+        for (String question : commonQuestions) {
+            try {
+                chatService.answerQuestion(question);
+                totalWarmed++;
+            } catch (Exception e) {
+                log.warn("Lỗi khi warm up câu hỏi: {}", question, e);
+            }
+        }
+        
+        long endTime = System.currentTimeMillis();
+        
+        return ResponseEntity.ok(Map.of(
+            "message", "Cache đã được warm up",
+            "questionsWarmed", totalWarmed,
+            "totalTime", (endTime - startTime) + "ms",
+            "timestamp", Instant.now().toString()
+        ));
     }
 
 
@@ -58,16 +93,13 @@ public class AIChatController {
             }
 
             long startTime = System.currentTimeMillis();
-            String response = chatService.answerQuestion(question);
+            List<HotelRAGService.HotelSuggestionDTO> suggestions = chatService.answerQuestion(question);
             long endTime = System.currentTimeMillis();
-
-            if (response == null) {
-                response = "Xin lỗi, tôi chưa thể đưa ra câu trả lời phù hợp lúc này.";
-            }
 
             Map<String, Object> result = new HashMap<>();
             result.put("question", question);
-            result.put("response", response);
+            result.put("results", suggestions);
+            result.put("total", suggestions.size());
             result.put("timestamp", Instant.now().toString());
             result.put("processingTime", (endTime - startTime) + "ms");
 
@@ -79,6 +111,7 @@ public class AIChatController {
                     .body(Map.of("error", "Có lỗi xảy ra khi xử lý câu hỏi. Vui lòng thử lại."));
         }
     }
+
 
 
     @PostMapping("/refresh")

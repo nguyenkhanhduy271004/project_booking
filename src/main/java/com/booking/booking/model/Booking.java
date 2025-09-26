@@ -43,11 +43,9 @@ public class Booking extends AbstractEntity<Long> implements Serializable {
     private Long legacyRoomId;
 
     @Column(nullable = false)
-    @Future
     private LocalDate checkInDate;
 
     @Column(nullable = false)
-    @Future
     private LocalDate checkOutDate;
 
     @Column(nullable = false)
@@ -67,9 +65,4 @@ public class Booking extends AbstractEntity<Long> implements Serializable {
     @Builder.Default
     private List<Room> rooms = new ArrayList<>();
 
-
-    @AssertTrue(message = "Check-out date must be after check-in date")
-    private boolean isValidDateRange() {
-        return checkOutDate != null && checkInDate != null && checkOutDate.isAfter(checkInDate);
-    }
 }

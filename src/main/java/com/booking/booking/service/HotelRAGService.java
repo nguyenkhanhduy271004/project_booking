@@ -4,6 +4,8 @@ import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Room;
 import com.booking.booking.repository.HotelRepository;
 import jakarta.annotation.PostConstruct;
+import lombok.Builder;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
@@ -25,13 +27,13 @@ public class HotelRAGService {
     private final ChatClient chatClient;
 
     private static final String SYSTEM_PROMPT = """
-            Bạn là một trợ lý đặt phòng khách sạn thông minh tại TP.HCM, Việt Nam.
+            Bạn là một trợ lý đặt phòng khách sạn thông minh tại Việt Nam.
             
             Hướng dẫn:
             - Luôn trả lời bằng tiếng Việt
             - Gợi ý khách sạn phù hợp dựa trên yêu cầu của khách (vị trí, ngân sách, rating, số người)
             - Hiển thị giá bằng VND với định dạng phân cách hàng nghìn
-            - Nếu không có khách sạn nào phù hợp hoàn toàn, gợi ý lựa chọn gần nhất
+            - Nếu không có khách sạn nào phù hợp hoàn toàn, gợi ý lựa chọn gần nhất trong khu vực lân cận
             - Chỉ sử dụng thông tin từ dữ liệu được cung cấp
             - Luôn thân thiện và hữu ích
             """;
@@ -41,18 +43,14 @@ public class HotelRAGService {
                            ChatClient.Builder chatClientBuilder) {
         this.hotelRepository = hotelRepository;
         this.vectorStore = vectorStore;
-        this.chatClient = chatClientBuilder
-                .defaultSystem(SYSTEM_PROMPT)
-                .build();
+        this.chatClient = chatClientBuilder.defaultSystem(SYSTEM_PROMPT).build();
     }
 
     @PostConstruct
     public void initializeVectorStore() {
-        log.info("Bắt đầu khởi tạo vector store...");
         CompletableFuture.runAsync(() -> {
             try {
                 indexAllHotels();
-                log.info("Hoàn thành khởi tạo vector store");
             } catch (Exception e) {
                 log.error("Lỗi khi khởi tạo vector store", e);
             }
@@ -60,33 +58,48 @@ public class HotelRAGService {
     }
 
     public void indexAllHotels() {
+        long startTime = System.currentTimeMillis();
         List<Hotel> hotels = hotelRepository.findAll();
-        log.info("Đang index {} khách sạn...", hotels.size());
 
-        List<Document> documents = new ArrayList<>();
+        // Pre-allocate với estimated capacity
+        List<Document> documents = new ArrayList<>(hotels.size() * 3); // Estimate 3 docs per hotel
+
+        log.info("Bắt đầu tạo documents cho {} khách sạn", hotels.size());
 
         for (Hotel hotel : hotels) {
             try {
+                // Chỉ tạo hotel overview document để tăng tốc
+                // Room documents có thể tạo sau nếu cần
                 documents.add(createHotelOverviewDocument(hotel));
 
-                for (Room room : hotel.getRooms()) {
-                    documents.add(createRoomDocument(hotel, room));
+                // Chỉ tạo location document nếu thực sự cần thiết
+                if (hotel.getDistrict() != null && !hotel.getDistrict().trim().isEmpty()) {
+                    documents.add(createLocationDocument(hotel));
                 }
 
-                documents.add(createLocationDocument(hotel));
-
+                // Tạo room documents cho các phòng available (giới hạn số lượng)
+                int roomCount = 0;
+                for (Room room : hotel.getRooms()) {
+                    if (room.isAvailable() && roomCount < 3) { // Giới hạn 3 phòng/hotel để giảm documents
+                        documents.add(createRoomDocument(hotel, room));
+                        roomCount++;
+                    }
+                }
             } catch (Exception e) {
                 log.warn("Lỗi khi tạo document cho hotel {}: {}", hotel.getId(), e.getMessage());
             }
         }
 
+        long docCreationTime = System.currentTimeMillis();
+        log.info("Tạo {} documents trong {}ms", documents.size(), docCreationTime - startTime);
+
         if (!documents.isEmpty()) {
             try {
                 clearVectorStore();
-
                 addDocumentsInBatches(documents);
 
-                log.info("Đã index thành công {} documents", documents.size());
+                long totalTime = System.currentTimeMillis() - startTime;
+                log.info("Hoàn thành indexing {} documents trong {}ms", documents.size(), totalTime);
             } catch (Exception e) {
                 log.error("Lỗi khi thêm documents vào vector store", e);
             }
@@ -95,23 +108,15 @@ public class HotelRAGService {
 
     private void clearVectorStore() {
         try {
-            List<Document> existingDocs = vectorStore.similaritySearch(
-                    SearchRequest.builder()
-                            .query("*")
-                            .topK(10000)
-                            .build()
-            );
-
+            List<Document> existingDocs = vectorStore.similaritySearch(SearchRequest.builder().query("*").topK(10000).build());
             if (!existingDocs.isEmpty()) {
                 List<String> docIds = existingDocs.stream()
                         .map(doc -> doc.getMetadata().get("id"))
                         .filter(Objects::nonNull)
                         .map(String::valueOf)
                         .collect(Collectors.toList());
-
                 if (!docIds.isEmpty()) {
                     vectorStore.delete(docIds);
-                    log.info("Đã xóa {} documents cũ", docIds.size());
                 }
             }
         } catch (Exception e) {
@@ -120,31 +125,41 @@ public class HotelRAGService {
     }
 
     private void addDocumentsInBatches(List<Document> documents) {
-        int batchSize = 20;
+        int batchSize = 50;
         for (int i = 0; i < documents.size(); i += batchSize) {
+            List<Document> batch = null;
             try {
                 int endIndex = Math.min(i + batchSize, documents.size());
-                List<Document> batch = documents.subList(i, endIndex);
-
+                batch = documents.subList(i, endIndex);
                 vectorStore.add(batch);
-
-                log.info("Đã index batch {}/{} ({} documents)",
-                        (i / batchSize + 1),
-                        (documents.size() + batchSize - 1) / batchSize,
-                        batch.size());
-
-                Thread.sleep(100);
-
+                Thread.sleep(50);
             } catch (Exception e) {
                 log.error("Lỗi khi index batch từ {} đến {}", i, Math.min(i + batchSize, documents.size()), e);
+
+                if (batch != null) {
+                    try {
+                        int smallerBatchSize = Math.min(10, batch.size());
+                        for (int j = 0; j < batch.size(); j += smallerBatchSize) {
+                            int smallEndIndex = Math.min(j + smallerBatchSize, batch.size());
+                            List<Document> smallBatch = batch.subList(j, smallEndIndex);
+                            vectorStore.add(smallBatch);
+                            Thread.sleep(100);
+                        }
+                    } catch (Exception retryException) {
+                        log.error("Lỗi khi retry index batch", retryException);
+                    }
+                } else {
+                    log.warn("Không thể retry vì batch null tại vị trí {}", i);
+                }
             }
         }
     }
 
+
     private Document createHotelOverviewDocument(Hotel hotel) {
         String content = String.format("""
                         🏨 KHÁCH SẠN: %s
-                        📍 Địa chỉ: %s, Quận %s, TP.HCM
+                        📍 Địa chỉ: %s, %s, %s
                         ⭐ Xếp hạng: %s sao
                         🛏️ Tổng số phòng: %s phòng
                         💰 Khoảng giá: %s - %s VND/đêm
@@ -154,6 +169,7 @@ public class HotelRAGService {
                 safeString(hotel.getName()),
                 safeString(hotel.getAddressDetail()),
                 safeString(hotel.getDistrict()),
+                safeString(hotel.getProvince()),
                 safeString(hotel.getStarRating()),
                 String.valueOf(hotel.getRooms().size()),
                 formatPrice(getMinPrice(hotel)),
@@ -168,15 +184,14 @@ public class HotelRAGService {
         metadata.put("hotelId", hotel.getId());
         metadata.put("hotelName", hotel.getName());
         metadata.put("district", hotel.getDistrict());
+        metadata.put("province", inferProvince(hotel.getDistrict(), hotel.getProvince()));
         metadata.put("starRating", hotel.getStarRating());
         metadata.put("minPrice", getMinPrice(hotel));
         metadata.put("maxPrice", getMaxPrice(hotel));
         metadata.put("hasAvailableRooms", hasAvailableRooms(hotel));
 
-
         return new Document(content, metadata);
     }
-
 
     private Document createRoomDocument(Hotel hotel, Room room) {
         String content = String.format("""
@@ -184,176 +199,324 @@ public class HotelRAGService {
                         🔢 Sức chứa: %s người
                         💰 Giá: %s VND/đêm
                         ✅ Trạng thái: %s
-                        🏨 Khách sạn: %s (Quận %s)
+                        🏨 Khách sạn: %s (%s, %s)
                         """,
                 safeString(room.getTypeRoom()),
                 safeString(room.getCapacity()),
                 formatPrice(room.getPricePerNight()),
                 room.isAvailable() ? "Có sẵn" : "Đã đặt",
                 safeString(hotel.getName()),
-                safeString(hotel.getDistrict())
+                safeString(hotel.getDistrict()),
+                safeString(hotel.getProvince())
         );
 
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("id", "hotel_" + hotel.getId());
-        metadata.put("type", "hotel_overview");
+        metadata.put("id", "room_" + room.getId());
+        metadata.put("type", "room");
         metadata.put("hotelId", hotel.getId());
         metadata.put("hotelName", hotel.getName());
         metadata.put("district", hotel.getDistrict());
-        metadata.put("starRating", hotel.getStarRating());
-        metadata.put("minPrice", getMinPrice(hotel));
-        metadata.put("maxPrice", getMaxPrice(hotel));
-        metadata.put("hasAvailableRooms", hasAvailableRooms(hotel));
-
+        metadata.put("province", hotel.getProvince());
 
         return new Document(content, metadata);
     }
-
 
     private Document createLocationDocument(Hotel hotel) {
         String content = String.format("""
                         📍 ĐỊA ĐIỂM KHÁCH SẠN
                         Khách sạn: %s
-                        Địa chỉ: %s, Quận %s, TP.HCM
+                        Địa chỉ: %s, %s, %s
                         ⭐ Xếp hạng: %s sao
                         """,
                 safeString(hotel.getName()),
                 safeString(hotel.getAddressDetail()),
                 safeString(hotel.getDistrict()),
+                safeString(hotel.getProvince()),
                 safeString(hotel.getStarRating())
         );
 
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("id", "hotel_" + hotel.getId());
-        metadata.put("type", "hotel_overview");
+        metadata.put("id", UUID.randomUUID().toString());
+        metadata.put("type", "location");
         metadata.put("hotelId", hotel.getId());
         metadata.put("hotelName", hotel.getName());
         metadata.put("district", hotel.getDistrict());
-        metadata.put("starRating", hotel.getStarRating());
-        metadata.put("minPrice", getMinPrice(hotel));
-        metadata.put("maxPrice", getMaxPrice(hotel));
-        metadata.put("hasAvailableRooms", hasAvailableRooms(hotel));
-
+        metadata.put("province", hotel.getProvince());
 
         return new Document(content, metadata);
     }
 
-    private String safeString(Object obj) {
-        return obj != null ? String.valueOf(obj) : "";
-    }
+    public List<HotelSuggestionDTO> searchAndAnswer(String question) {
+        long startTime = System.currentTimeMillis();
 
-
-    public String searchAndAnswer(String question) {
         try {
-            log.debug("Đang xử lý câu hỏi: {}", question);
-
-            // Truy vấn vector store
+            // Giảm topK và tăng similarity threshold để tìm kiếm nhanh hơn
             List<Document> relevantDocs = vectorStore.similaritySearch(
                     SearchRequest.builder()
                             .query(question)
-                            .topK(6)
-                            .similarityThreshold(0.5)
+                            .topK(6)  // Giảm từ 10 xuống 6
+                            .similarityThreshold(0.6)  // Giảm từ 0.7 xuống 0.6 để có kết quả nhanh hơn
                             .build()
             );
 
+            long searchTime = System.currentTimeMillis();
+            log.debug("Vector search took: {}ms", searchTime - startTime);
+
             if (relevantDocs == null || relevantDocs.isEmpty()) {
-                log.info("Không tìm thấy document phù hợp");
-                return generateFallbackMessage(question);
+                log.info("Không tìm thấy document phù hợp với câu hỏi: {}", question);
+                return Collections.emptyList();
             }
 
-            // Tạo phần context từ các document text (chỉ text không lỗi)
-            String context = relevantDocs.stream()
-                    .map(doc -> {
-                        try {
-                            return doc.getText();
-                        } catch (Exception e) {
-                            log.warn("Lỗi khi lấy text từ document", e);
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.joining("\n" + "=".repeat(50) + "\n"));
+            // Sử dụng HashSet cho performance tốt hơn
+            Set<Long> addedHotelIds = new HashSet<>();
+            List<HotelSuggestionDTO> suggestions = new ArrayList<>(5); // Pre-allocate capacity
 
-            log.info("Tìm thấy {} documents liên quan", relevantDocs.size());
+            // Trích xuất từ khóa địa điểm từ câu hỏi (cache result)
+            String locationKeywords = extractLocationKeywords(question);
+            boolean hasLocationFilter = !locationKeywords.isEmpty();
 
-            // Tạo prompt đầy đủ
-            String prompt = String.format("""
-                Dựa vào thông tin khách sạn sau:
+            for (Document doc : relevantDocs) {
+                // Early exit if we have enough results
+                if (suggestions.size() >= 5) {
+                    break;
+                }
 
-                %s
+                Map<String, Object> meta = doc.getMetadata();
 
-                Câu hỏi của khách: %s
+                // Skip non-hotel documents
+                if (!"hotel_overview".equals(meta.get("type"))) continue;
 
-                → Hãy đưa ra gợi ý phù hợp nhất. Nếu có nhiều lựa chọn, hãy nêu ưu nhược điểm của từng khách sạn và giúp khách dễ so sánh.
-                Nếu không tìm thấy phù hợp, hãy lịch sự từ chối và gợi ý thêm các khu vực lân cận.
-                """, context, question);
+                Long hotelId = Long.parseLong(String.valueOf(meta.get("hotelId")));
 
-            // Gửi prompt đến AI
-            String response = chatClient
-                    .prompt()
-                    .user(prompt)
-                    .call()
-                    .content();
+                // Kiểm tra trùng lặp
+                if (addedHotelIds.contains(hotelId)) {
+                    continue;
+                }
 
-            log.info("Đã tạo câu trả lời thành công");
-            return response;
+                String name = String.valueOf(meta.get("hotelName"));
+                String district = Optional.ofNullable(meta.get("district"))
+                        .map(String::valueOf)
+                        .orElse("Không rõ");
+                String province = Optional.ofNullable(meta.get("province"))
+                        .map(String::valueOf)
+                        .filter(p -> !"null".equalsIgnoreCase(p))
+                        .orElse("Không rõ");
+                // Kiểm tra relevance về vị trí nếu có từ khóa địa điểm
+                if (hasLocationFilter && !isLocationRelevant(locationKeywords, district, province)) {
+                    log.debug("Khách sạn {} không phù hợp với vị trí yêu cầu: {}", name, locationKeywords);
+                    continue;
+                }
+
+                // Parse numbers safely with defaults
+                double minPrice = parseDoubleOrDefault(meta.get("minPrice"), 0.0);
+                int star = parseIntOrDefault(meta.get("starRating"), 0);
+
+                HotelSuggestionDTO dto = HotelSuggestionDTO.builder()
+                        .id(hotelId)
+                        .name(name)
+                        .district(district)
+                        .province(province)
+                        .minPrice(minPrice)
+                        .star(star)
+                        .url("http://localhost:5173/hotel/" + hotelId)
+                        .build();
+
+                suggestions.add(dto);
+                addedHotelIds.add(hotelId);
+            }
+
+            long totalTime = System.currentTimeMillis() - startTime;
+            log.info("Tìm thấy {} khách sạn phù hợp cho câu hỏi: {} ({}ms)",
+                    suggestions.size(), question, totalTime);
+            return suggestions;
 
         } catch (Exception e) {
-            log.error("Lỗi khi xử lý câu hỏi", e);
-            return "❌ Xin lỗi, đã xảy ra lỗi khi tìm kiếm khách sạn. Bạn vui lòng thử lại sau hoặc cung cấp thêm thông tin.";
+            long errorTime = System.currentTimeMillis() - startTime;
+            log.error("Lỗi khi xử lý câu hỏi: {} ({}ms)", question, errorTime, e);
+            return Collections.emptyList();
         }
     }
 
+    /**
+     * Parse double safely with default value
+     */
+    private double parseDoubleOrDefault(Object value, double defaultValue) {
+        if (value == null) return defaultValue;
+        try {
+            return Double.parseDouble(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
 
-    private String generateFallbackMessage(String question) {
-        String lower = question.toLowerCase();
-        String district = null;
+    /**
+     * Parse int safely with default value
+     */
+    private int parseIntOrDefault(Object value, int defaultValue) {
+        if (value == null) return defaultValue;
+        try {
+            return (int) Double.parseDouble(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
 
-        if (lower.contains("thủ đức")) district = "Thủ Đức";
-        else if (lower.contains("bình thạnh")) district = "Bình Thạnh";
-        else if (lower.contains("quận 1")) district = "Quận 1";
-        else if (lower.contains("quận 3")) district = "Quận 3";
-        else if (lower.contains("quận 7")) district = "Quận 7";
+    /**
+     * Trích xuất từ khóa địa điểm từ câu hỏi
+     */
+    private String extractLocationKeywords(String question) {
+        if (question == null) return "";
 
-        return String.format("""
-                        Hiện tại, tôi chưa tìm thấy khách sạn nào đúng với khu vực%s trong hệ thống.
-                        
-                        🔍 Tuy nhiên, bạn có thể giúp tôi hiểu rõ hơn bằng cách cung cấp thêm các thông tin sau:
-                        • Khu vực cụ thể hoặc lân cận (VD: Thủ Đức, Quận 9, Bình Thạnh...)
-                        • Ngân sách dự kiến mỗi đêm (VD: dưới 500.000 VND, 1 - 2 triệu VND...)
-                        • Số lượng người ở (VD: 2 người lớn, 1 trẻ em)
-                        • Tiêu chuẩn mong muốn (VD: khách sạn 3 sao, 4 sao...)
-                        
-                        📌 Nếu bạn linh hoạt về khu vực, tôi có thể gợi ý một vài khách sạn gần%s ngay bây giờ. Bạn có muốn xem không?
-                        """,
-                district != null ? " \"" + district + "\"" : "",
-                district != null ? " " + district : " khu vực bạn chọn"
-        );
+        String lowerQuestion = question.toLowerCase();
+        List<String> locationKeywords = new ArrayList<>();
+
+        // Các từ khóa địa điểm phổ biến ở Việt Nam
+        String[] vietnameseProvinces = {
+                "hà nội", "hồ chí minh", "đà nẵng", "hải phòng", "cần thơ", "quảng ninh", "khánh hòa",
+                "thừa thiên huế", "lâm đồng", "bình định", "phú quốc", "vũng tàu", "nha trang",
+                "hạ long", "sapa", "hội an", "huế", "đà lạt", "phú yên", "bình thuận", "quảng nam",
+                "quảng trị", "nghệ an", "thanh hóa", "nam định", "hải dương", "bắc ninh", "vĩnh phúc",
+                "thái nguyên", "lạng sơn", "cao bằng", "hà giang", "lai châu", "sơn la", "điện biên",
+                "yên bái", "tuyên quang", "phú thọ", "vĩnh yên", "bắc giang", "quảng bình"
+        };
+
+        for (String province : vietnameseProvinces) {
+            if (lowerQuestion.contains(province)) {
+                locationKeywords.add(province);
+            }
+        }
+
+        return String.join(" ", locationKeywords);
+    }
+
+    /**
+     * Kiểm tra xem khách sạn có phù hợp với vị trí yêu cầu không
+     */
+    private boolean isLocationRelevant(String locationKeywords, String district, String province) {
+        if (locationKeywords == null || locationKeywords.trim().isEmpty()) {
+            return true; // Nếu không có từ khóa địa điểm cụ thể, chấp nhận tất cả
+        }
+
+        String lowerKeywords = locationKeywords.toLowerCase();
+        String lowerDistrict = district != null ? district.toLowerCase() : "";
+        String lowerProvince = province != null ? province.toLowerCase() : "";
+
+        // Kiểm tra xem district hoặc province có chứa từ khóa không
+        for (String keyword : lowerKeywords.split("\\s+")) {
+            if (lowerDistrict.contains(keyword) || lowerProvince.contains(keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Suy luận tỉnh/thành phố từ district nếu province null hoặc rỗng
+     */
+    private String inferProvince(String district, String province) {
+        // Nếu province đã có và không phải null/empty thì trả về
+        if (province != null && !province.trim().isEmpty() && !"null".equals(province)) {
+            return province;
+        }
+
+        // Nếu district null hoặc rỗng thì trả về empty
+        if (district == null || district.trim().isEmpty()) {
+            return "";
+        }
+
+        String lowerDistrict = district.toLowerCase();
+
+        // Map các quận/huyện phổ biến với tỉnh/thành phố
+        if (lowerDistrict.contains("quận 1") || lowerDistrict.contains("quận 2") ||
+                lowerDistrict.contains("quận 3") || lowerDistrict.contains("quận 4") ||
+                lowerDistrict.contains("quận 5") || lowerDistrict.contains("quận 6") ||
+                lowerDistrict.contains("quận 7") || lowerDistrict.contains("quận 8") ||
+                lowerDistrict.contains("quận 9") || lowerDistrict.contains("quận 10") ||
+                lowerDistrict.contains("quận 11") || lowerDistrict.contains("quận 12") ||
+                lowerDistrict.contains("thủ đức") || lowerDistrict.contains("bình thạnh") ||
+                lowerDistrict.contains("gò vấp") || lowerDistrict.contains("phú nhuận") ||
+                lowerDistrict.contains("tân bình") || lowerDistrict.contains("tân phú") ||
+                lowerDistrict.contains("bình tân") || lowerDistrict.contains("hóc môn") ||
+                lowerDistrict.contains("củ chi") || lowerDistrict.contains("nhà bè") ||
+                lowerDistrict.contains("cần giờ") || lowerDistrict.contains("tp.hcm") ||
+                lowerDistrict.contains("hồ chí minh") || lowerDistrict.contains("sài gòn")) {
+            return "Thành Phố Hồ Chí Minh";
+        }
+
+        if (lowerDistrict.contains("ba đình") || lowerDistrict.contains("hoàn kiếm") ||
+                lowerDistrict.contains("hai bà trưng") || lowerDistrict.contains("đống đa") ||
+                lowerDistrict.contains("tây hồ") || lowerDistrict.contains("cầu giấy") ||
+                lowerDistrict.contains("thanh xuân") || lowerDistrict.contains("hoàng mai") ||
+                lowerDistrict.contains("long biên") || lowerDistrict.contains("nam từ liêm") ||
+                lowerDistrict.contains("bắc từ liêm") || lowerDistrict.contains("hà nội")) {
+            return "Hà Nội";
+        }
+
+        if (lowerDistrict.contains("hải châu") || lowerDistrict.contains("thanh khê") ||
+                lowerDistrict.contains("sơn trà") || lowerDistrict.contains("ngũ hành sơn") ||
+                lowerDistrict.contains("liên chiểu") || lowerDistrict.contains("cẩm lệ") ||
+                lowerDistrict.contains("đà nẵng")) {
+            return "Đà Nẵng";
+        }
+
+        if (lowerDistrict.contains("nha trang") || lowerDistrict.contains("cam ranh") ||
+                lowerDistrict.contains("khánh hòa")) {
+            return "Khánh Hòa";
+        }
+
+        if (lowerDistrict.contains("quảng trị")) {
+            return "Quảng Trị";
+        }
+
+        if (lowerDistrict.contains("huế") || lowerDistrict.contains("thừa thiên")) {
+            return "Thừa Thiên Huế";
+        }
+
+        if (lowerDistrict.contains("đà lạt") || lowerDistrict.contains("lâm đồng")) {
+            return "Lâm Đồng";
+        }
+
+        if (lowerDistrict.contains("vũng tàu") || lowerDistrict.contains("bà rịa")) {
+            return "Bà Rịa - Vũng Tàu";
+        }
+
+        if (lowerDistrict.contains("phú quốc") || lowerDistrict.contains("kiên giang")) {
+            return "Kiên Giang";
+        }
+
+        // Nếu không match được thì trả về district làm province
+        return district;
+    }
+
+    @Builder
+    @Data
+    public static class HotelSuggestionDTO {
+        private Long id;
+        private String name;
+        private String district;
+        private String province;
+        private double minPrice;
+        private int star;
+        private String url;
     }
 
     @CacheEvict(value = "hotelSearch", allEntries = true)
     public void updateHotelInIndex(Long hotelId) {
         try {
-            log.info("Đang cập nhật index cho khách sạn ID: {}", hotelId);
-
-            // Xóa documents cũ của hotel này
             deleteHotelDocuments(hotelId);
-
-            // Thêm lại documents mới
             Hotel hotel = hotelRepository.findById(hotelId).orElse(null);
             if (hotel != null) {
                 List<Document> newDocs = new ArrayList<>();
                 newDocs.add(createHotelOverviewDocument(hotel));
                 newDocs.add(createLocationDocument(hotel));
-
                 for (Room room : hotel.getRooms()) {
-                    newDocs.add(createRoomDocument(hotel, room));
+                    if (room.isAvailable()) {
+                        newDocs.add(createRoomDocument(hotel, room));
+                    }
                 }
-
                 vectorStore.add(newDocs);
-                log.info("Đã cập nhật {} documents cho khách sạn {}", newDocs.size(), hotel.getName());
             }
-
         } catch (Exception e) {
             log.error("Lỗi khi cập nhật index cho khách sạn {}", hotelId, e);
         }
@@ -361,86 +524,48 @@ public class HotelRAGService {
 
     private void deleteHotelDocuments(Long hotelId) {
         try {
-            // Tìm tất cả documents của hotel này
-            List<String> patterns = List.of(
-                    "hotel_" + hotelId,
-                    "location_" + hotelId
-            );
-
-            // Tìm tất cả room documents của hotel này
             List<Document> existingDocs = vectorStore.similaritySearch(
-                    SearchRequest.builder()
-                            .query("hotelId:" + hotelId)
-                            .topK(1000)
-                            .build()
+                    SearchRequest.builder().query("*").topK(1000).build()
             );
 
             List<String> docIdsToDelete = existingDocs.stream()
+                    .filter(doc -> hotelId.equals(doc.getMetadata().get("hotelId")))
                     .map(doc -> doc.getMetadata().get("id"))
                     .filter(Objects::nonNull)
                     .map(String::valueOf)
                     .collect(Collectors.toList());
 
-            docIdsToDelete.addAll(patterns);
-
             if (!docIdsToDelete.isEmpty()) {
                 vectorStore.delete(docIdsToDelete);
-                log.debug("Đã xóa {} documents cũ của hotel {}", docIdsToDelete.size(), hotelId);
             }
-
         } catch (Exception e) {
             log.warn("Không thể xóa documents cũ của hotel {}: {}", hotelId, e.getMessage());
         }
     }
 
-    // Helper methods
+
+
     private double getMinPrice(Hotel hotel) {
-        return hotel.getRooms().stream()
-                .mapToDouble(Room::getPricePerNight)
-                .min()
-                .orElse(0);
+        return hotel.getRooms().stream().mapToDouble(Room::getPricePerNight).min().orElse(0);
     }
 
     private double getMaxPrice(Hotel hotel) {
-        return hotel.getRooms().stream()
-                .mapToDouble(Room::getPricePerNight)
-                .max()
-                .orElse(0);
+        return hotel.getRooms().stream().mapToDouble(Room::getPricePerNight).max().orElse(0);
     }
 
     private String getRoomTypes(Hotel hotel) {
-        return hotel.getRooms().stream()
-                .map(room -> room.getTypeRoom().toString())
-                .distinct()
-                .collect(Collectors.joining(", "));
+        return hotel.getRooms().stream().map(room -> room.getTypeRoom().toString()).distinct().collect(Collectors.joining(", "));
     }
 
-
     private boolean hasAvailableRooms(Hotel hotel) {
-        return hotel.getRooms().stream()
-                .anyMatch(Room::isAvailable);
+        return hotel.getRooms().stream().anyMatch(Room::isAvailable);
     }
 
     private String formatPrice(double price) {
         return String.format("%,.0f", price);
     }
 
-    private String getPriceSegment(double price) {
-        if (price < 500000) return "Tiết kiệm";
-        if (price < 1000000) return "Tầm trung";
-        if (price < 2000000) return "Cao cấp";
-        return "Sang trọng";
-    }
-
-    private String getDistrictDescription(String district) {
-        Map<String, String> descriptions = Map.of(
-                "1", "Trung tâm thành phố, gần các địa điểm du lịch chính",
-                "3", "Khu vực sầm uất, nhiều nhà hàng và cafe",
-                "7", "Khu vực hiện đại, gần khu Phú Mỹ Hưng",
-                "Bình Thạnh", "Khu vực phát triển, giao thông thuận tiện",
-                "Thủ Đức", "Khu đô thị mới, hiện đại"
-        );
-        return descriptions.getOrDefault(district, "Khu vực thuận tiện");
+    private String safeString(Object obj) {
+        return obj != null ? String.valueOf(obj) : "";
     }
 }
-

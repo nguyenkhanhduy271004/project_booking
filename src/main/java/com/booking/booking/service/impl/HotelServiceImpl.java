@@ -92,7 +92,7 @@ public class HotelServiceImpl implements HotelService {
         hotelRepository.findByIdAndIsDeletedFalse(hotelId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id: " + hotelId));
 
-        return roomRepository.findByHotelId(hotelId);
+        return roomRepository.findByHotelIdAndIsDeletedFalse(hotelId);
     }
 
     @Override
@@ -166,7 +166,7 @@ public class HotelServiceImpl implements HotelService {
         if (oldImageUrl != null && !oldImageUrl.isBlank()) {
             try {
                 String publicId = extractPublicIdFromUrl(oldImageUrl);
-                if (publicId != null && !publicId.isBlank()) {
+                if (!publicId.isBlank()) {
                     cloudinaryService.delete(publicId);
                 } else {
                     log.warn("Image publicId extraction failed for URL: {}", oldImageUrl);
@@ -241,7 +241,7 @@ public class HotelServiceImpl implements HotelService {
 
         deleteImage(hotel.getImageUrl());
 
-        roomRepository.findByHotelId(id).forEach(room -> {
+        roomRepository.findByHotelIdAndIsDeletedFalse(id).forEach(room -> {
             List<String> imageUrls = room.getListImageUrl();
             if (imageUrls != null) {
                 imageUrls.forEach(this::deleteImage);
@@ -272,7 +272,7 @@ public class HotelServiceImpl implements HotelService {
         hotels.forEach(hotel -> {
             deleteImage(hotel.getImageUrl());
 
-            List<Room> rooms = roomRepository.findByHotelId(hotel.getId());
+            List<Room> rooms = roomRepository.findByHotelIdAndIsDeletedFalse(hotel.getId());
             rooms.forEach(room -> {
                 List<String> imageUrls = room.getListImageUrl();
                 if (imageUrls != null) {

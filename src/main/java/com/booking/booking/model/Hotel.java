@@ -26,6 +26,7 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
     private int totalRooms;
     private String imageUrl;
     private String district;
+    private String province;
     private double starRating;
     private String addressDetail;
 

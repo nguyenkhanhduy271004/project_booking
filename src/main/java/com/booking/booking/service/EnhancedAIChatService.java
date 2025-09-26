@@ -5,6 +5,9 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
+
 @Service
 @Slf4j
 public class EnhancedAIChatService {
@@ -15,23 +18,29 @@ public class EnhancedAIChatService {
         this.ragService = ragService;
     }
 
-    @Cacheable(value = "hotelSearch", key = "#question", unless = "#result == null || #result.contains('lỗi')")
-    public String answerQuestion(String question) {
+    @Cacheable(value = "hotelSearch", key = "#question.toLowerCase().trim()", unless = "#result == null || #result.isEmpty()")
+    public List<HotelRAGService.HotelSuggestionDTO> answerQuestion(String question) {
+        long startTime = System.currentTimeMillis();
+
         if (question == null || question.trim().isEmpty()) {
-            return """
-                Xin chào! Tôi là trợ lý tìm kiếm khách sạn tại TP.HCM. 
-                Tôi có thể giúp bạn tìm khách sạn phù hợp dựa trên:
-                - Vị trí mong muốn
-                - Ngân sách 
-                - Số người ở
-                - Tiêu chuẩn khách sạn
-                
-                Bạn cần tìm khách sạn như thế nào?
-                """;
+            return greetingMessage();
         }
 
-        log.info("Đang xử lý câu hỏi: {}", question);
-        return ragService.searchAndAnswer(question);
+        // Normalize question
+        String normalizedQuestion = question.toLowerCase().trim();
+        log.info("Đang xử lý câu hỏi: {}", normalizedQuestion);
+
+        List<HotelRAGService.HotelSuggestionDTO> result = ragService.searchAndAnswer(normalizedQuestion);
+
+        long totalTime = System.currentTimeMillis() - startTime;
+        log.info("Hoàn thành xử lý câu hỏi trong {}ms", totalTime);
+
+        // Nếu không có kết quả phù hợp → trả về fallback thân thiện
+        if (result == null || result.isEmpty()) {
+            return fallbackMessage();
+        }
+
+        return result;
     }
 
     @CacheEvict(value = "hotelSearch", allEntries = true)
@@ -43,5 +52,33 @@ public class EnhancedAIChatService {
     public void refreshHotelData(Long hotelId) {
         log.info("Đang làm mới dữ liệu khách sạn ID: {}", hotelId);
         ragService.updateHotelInIndex(hotelId);
+    }
+
+    // Trả về lời chào mặc định khi user chưa hỏi gì
+    private List<HotelRAGService.HotelSuggestionDTO> greetingMessage() {
+        return List.of(
+                HotelRAGService.HotelSuggestionDTO.builder()
+                        .name("Xin chào! Tôi là trợ lý tìm kiếm khách sạn.")
+                        .district("")
+                        .province("")
+                        .minPrice(0)
+                        .star(0)
+                        .url("")
+                        .build()
+        );
+    }
+
+    // Trả về lời xin lỗi nếu user hỏi không liên quan
+    private List<HotelRAGService.HotelSuggestionDTO> fallbackMessage() {
+        return List.of(
+                HotelRAGService.HotelSuggestionDTO.builder()
+                        .name("Xin lỗi, tôi không thể tìm thấy khách sạn phù hợp với câu hỏi của bạn.")
+                        .district("")
+                        .province("")
+                        .minPrice(0)
+                        .star(0)
+                        .url("")
+                        .build()
+        );
     }
 }

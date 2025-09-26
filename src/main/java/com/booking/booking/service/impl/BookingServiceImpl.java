@@ -48,32 +48,54 @@ public class BookingServiceImpl implements BookingService {
     @Value("${booking.expiry.minutes:15}")
     private int expiryMinutes;
 
+    @Transactional
     public List<BookingResponse> createBooking(BookingRequest request) {
-        User currentUser = userContext.getCurrentUser();
-        Voucher voucher = voucherRepository.findById(request.getVoucherId()).orElse(null);
-        validateVoucherCollect(voucher, request.getHotelId());
-
+        if (request.getHotelId() == null) {
+            throw new BadRequestException("hotelId is required");
+        }
+        if (request.getRoomIds() == null || request.getRoomIds().isEmpty()) {
+            throw new BadRequestException("roomIds is required");
+        }
         validateBookingDates(request.getCheckInDate(), request.getCheckOutDate());
 
         List<Room> rooms = validateAndFetchRooms(request.getRoomIds(), request.getHotelId());
-        validateRoomAvailability(rooms, request.getRoomIds(), request.getCheckInDate(),
-                request.getCheckOutDate());
+        validateRoomAvailability(rooms, request.getRoomIds(),
+                request.getCheckInDate(), request.getCheckOutDate());
 
         long nights = ChronoUnit.DAYS.between(request.getCheckInDate(), request.getCheckOutDate());
+        if (nights <= 0) {
+            throw new BadRequestException("checkOutDate must be after checkInDate");
+        }
 
         BigDecimal total = rooms.stream()
-                .map(room -> BigDecimal.valueOf(room.getPricePerNight()))
+                .map(r -> BigDecimal.valueOf(r.getPricePerNight()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .multiply(BigDecimal.valueOf(nights));
 
-        if (total.compareTo(voucher.getPriceCondition()) < 0) {
-            throw new BadRequestException("Voucher not eligible!");
+        BigDecimal discount = BigDecimal.ZERO;
+        Voucher voucher = null;
+
+        if (request.getVoucherId() != null) {
+            voucher = voucherRepository.findById(request.getVoucherId())
+                    .orElseThrow(() -> new BadRequestException("Voucher not found"));
+
+            validateVoucherCollect(voucher, request.getHotelId());
+
+            if (voucher.getPriceCondition() != null && total.compareTo(voucher.getPriceCondition()) < 0) {
+                throw new BadRequestException("Voucher not eligible (order total below condition)");
+            }
+
+            if (voucher.getQuantity() == null || voucher.getQuantity() <= 0) {
+                throw new BadRequestException("Voucher out of stock");
+            }
+
+            BigDecimal percent = BigDecimal.valueOf(voucher.getPercentDiscount()); // ví dụ 10, 15 ...
+            discount = total.multiply(percent).divide(BigDecimal.valueOf(100));
         }
 
-        BigDecimal discount = total.multiply(BigDecimal.valueOf(voucher.getPercentDiscount()))
-                .divide(BigDecimal.valueOf(100));
         BigDecimal finalTotal = total.subtract(discount);
 
+        User currentUser = userContext.getCurrentUser();
         User guest = getBookingGuest(currentUser, request.getGuestId());
 
         String bookingCode = "BK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -95,20 +117,27 @@ public class BookingServiceImpl implements BookingService {
         Booking saved = bookingRepository.save(booking);
         BookingResponse response = bookingMapper.toBookingResponse(saved);
 
-        voucher.setQuantity(voucher.getQuantity() - 1);
-        voucherRepository.save(voucher);
+        if (voucher != null) {
+            voucher.setQuantity(voucher.getQuantity() - 1);
+            voucherRepository.save(voucher);
+        }
+
+        int setAvalableForRoom = roomRepository.markRoomsUnavailableByIds(request.getRoomIds());
+
+        if (setAvalableForRoom != request.getRoomIds().size()) {
+            throw new BadRequestException("Set unavailable rooms is failed");
+        }
 
         BookingNotificationDTO dto = new BookingNotificationDTO(saved);
         Long hotelId = saved.getHotel().getId();
-
         if (currentUser.getType() == UserType.ADMIN || currentUser.getType() == UserType.SYSTEM_ADMIN) {
             messagingTemplate.convertAndSend("/topic/booking/global", dto);
         }
-
         messagingTemplate.convertAndSend("/topic/booking/hotel/" + hotelId, dto);
 
         return List.of(response);
     }
+
 
     private void validateVoucherCollect(Voucher voucher, Long hotelId) {
         List<String> errors = new ArrayList<>();
