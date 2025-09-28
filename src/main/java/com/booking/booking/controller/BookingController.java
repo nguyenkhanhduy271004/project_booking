@@ -169,4 +169,11 @@ public class BookingController {
         return new ResponseSuccess(HttpStatus.NO_CONTENT, "Booking permanently deleted");
     }
 
+    @PutMapping("/{id}/status")
+    public ResponseSuccess updateStatusBooking(@PathVariable Long id, @RequestParam String status) {
+        bookingService.updateStatusBooking(id, status);
+
+        return new  ResponseSuccess(HttpStatus.OK, "Booking status updated successfully");
+    }
+
 }

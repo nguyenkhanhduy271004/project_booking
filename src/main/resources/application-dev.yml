@@ -27,12 +27,12 @@ spring:
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         jdbc:
           lob:
             non_contextual_creation: true
@@ -141,5 +141,6 @@ logging:
     org.springframework.boot: INFO
     org.springframework.security: INFO
     org.hibernate: WARN
+    net.logstash.logback: ERROR
 
 

@@ -314,5 +314,19 @@ public class RoomServiceImpl implements RoomService {
         return List.of();
     }
 
+    @Override
+    @Transactional
+    public void updateStatusRoom(List<Long> ids, Boolean status) {
+        List<Room> rooms = roomRepository.findAllById(ids);
+
+        if (rooms.size() != ids.size()) {
+            throw new ResourceNotFoundException("One or more room IDs not found");
+        }
+
+        rooms.forEach(room -> room.setAvailable(status));
+
+        roomRepository.saveAll(rooms);
+    }
+
 
 }

@@ -250,12 +250,11 @@ public class HotelRAGService {
         long startTime = System.currentTimeMillis();
 
         try {
-            // Giảm topK và tăng similarity threshold để tìm kiếm nhanh hơn
             List<Document> relevantDocs = vectorStore.similaritySearch(
                     SearchRequest.builder()
                             .query(question)
-                            .topK(6)  // Giảm từ 10 xuống 6
-                            .similarityThreshold(0.6)  // Giảm từ 0.7 xuống 0.6 để có kết quả nhanh hơn
+                            .topK(6)
+                            .similarityThreshold(0.6)
                             .build()
             );
 
@@ -267,28 +266,23 @@ public class HotelRAGService {
                 return Collections.emptyList();
             }
 
-            // Sử dụng HashSet cho performance tốt hơn
             Set<Long> addedHotelIds = new HashSet<>();
-            List<HotelSuggestionDTO> suggestions = new ArrayList<>(5); // Pre-allocate capacity
+            List<HotelSuggestionDTO> suggestions = new ArrayList<>(5);
 
-            // Trích xuất từ khóa địa điểm từ câu hỏi (cache result)
             String locationKeywords = extractLocationKeywords(question);
             boolean hasLocationFilter = !locationKeywords.isEmpty();
 
             for (Document doc : relevantDocs) {
-                // Early exit if we have enough results
                 if (suggestions.size() >= 5) {
                     break;
                 }
 
                 Map<String, Object> meta = doc.getMetadata();
 
-                // Skip non-hotel documents
                 if (!"hotel_overview".equals(meta.get("type"))) continue;
 
                 Long hotelId = Long.parseLong(String.valueOf(meta.get("hotelId")));
 
-                // Kiểm tra trùng lặp
                 if (addedHotelIds.contains(hotelId)) {
                     continue;
                 }
@@ -301,13 +295,13 @@ public class HotelRAGService {
                         .map(String::valueOf)
                         .filter(p -> !"null".equalsIgnoreCase(p))
                         .orElse("Không rõ");
-                // Kiểm tra relevance về vị trí nếu có từ khóa địa điểm
+
                 if (hasLocationFilter && !isLocationRelevant(locationKeywords, district, province)) {
                     log.debug("Khách sạn {} không phù hợp với vị trí yêu cầu: {}", name, locationKeywords);
                     continue;
                 }
 
-                // Parse numbers safely with defaults
+
                 double minPrice = parseDoubleOrDefault(meta.get("minPrice"), 0.0);
                 int star = parseIntOrDefault(meta.get("starRating"), 0);
 
@@ -415,19 +409,16 @@ public class HotelRAGService {
      * Suy luận tỉnh/thành phố từ district nếu province null hoặc rỗng
      */
     private String inferProvince(String district, String province) {
-        // Nếu province đã có và không phải null/empty thì trả về
         if (province != null && !province.trim().isEmpty() && !"null".equals(province)) {
             return province;
         }
 
-        // Nếu district null hoặc rỗng thì trả về empty
         if (district == null || district.trim().isEmpty()) {
             return "";
         }
 
         String lowerDistrict = district.toLowerCase();
 
-        // Map các quận/huyện phổ biến với tỉnh/thành phố
         if (lowerDistrict.contains("quận 1") || lowerDistrict.contains("quận 2") ||
                 lowerDistrict.contains("quận 3") || lowerDistrict.contains("quận 4") ||
                 lowerDistrict.contains("quận 5") || lowerDistrict.contains("quận 6") ||

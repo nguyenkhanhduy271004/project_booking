@@ -5,7 +5,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -35,7 +34,6 @@ public class EnhancedAIChatService {
         long totalTime = System.currentTimeMillis() - startTime;
         log.info("Hoàn thành xử lý câu hỏi trong {}ms", totalTime);
 
-        // Nếu không có kết quả phù hợp → trả về fallback thân thiện
         if (result == null || result.isEmpty()) {
             return fallbackMessage();
         }
@@ -54,7 +52,6 @@ public class EnhancedAIChatService {
         ragService.updateHotelInIndex(hotelId);
     }
 
-    // Trả về lời chào mặc định khi user chưa hỏi gì
     private List<HotelRAGService.HotelSuggestionDTO> greetingMessage() {
         return List.of(
                 HotelRAGService.HotelSuggestionDTO.builder()
@@ -68,7 +65,6 @@ public class EnhancedAIChatService {
         );
     }
 
-    // Trả về lời xin lỗi nếu user hỏi không liên quan
     private List<HotelRAGService.HotelSuggestionDTO> fallbackMessage() {
         return List.of(
                 HotelRAGService.HotelSuggestionDTO.builder()

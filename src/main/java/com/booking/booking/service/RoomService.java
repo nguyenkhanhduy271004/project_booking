@@ -45,4 +45,5 @@ public interface RoomService {
 
     List<LocalDate> getUnavailableDates(Long roomId, LocalDate from, LocalDate to);
 
+    void updateStatusRoom(List<Long> ids, Boolean status);
 }

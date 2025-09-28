@@ -11,6 +11,7 @@ import com.booking.booking.mapper.BookingMapper;
 import com.booking.booking.model.*;
 import com.booking.booking.repository.*;
 import com.booking.booking.service.BookingService;
+import com.booking.booking.util.BookingUtil;
 import com.booking.booking.util.UserContext;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
     private final BookingMapper bookingMapper;
     private final UserContext userContext;
+    private final BookingUtil bookingUtil;
 
     @Value("${booking.expiry.minutes:15}")
     private int expiryMinutes;
@@ -419,6 +421,15 @@ public class BookingServiceImpl implements BookingService {
         Pageable pageable = PageRequest.of(page, size);
         Page<Booking> result = bookingRepository.findHistoryByRoomId(roomId, from, to, pageable);
         return result.map(bookingMapper::toBookingResponse);
+    }
+
+    @Override
+    public void updateStatusBooking(Long id, String Status) {
+        Booking booking = bookingRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
+
+        booking.setStatus(BookingStatus.valueOf(Status.toUpperCase()));
+        bookingUtil.handleBookingWithStatus(booking, BookingStatus.valueOf(Status.toUpperCase()));
+        bookingRepository.save(booking);
     }
 
     @Scheduled(fixedRate = 300000)

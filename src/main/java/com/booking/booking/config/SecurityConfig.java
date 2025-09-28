@@ -4,6 +4,7 @@ import com.booking.booking.service.CustomOidcUserService;
 import com.booking.booking.service.UserServiceDetail;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -30,20 +32,22 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
+
     private static final String[] PUBLIC_API = {
             "/api/auth/**",
             "/api/v1/users/confirmEmail",
-            "/api/v1/users/changePassword",
             "/api/v1/users/forgotPassword",
-            "/api/v1/rooms/**",
-            "/api/v1/hotels/**",
-            "/api/v1/bookings/**",
-            "/api/v1/users/**",
+            "/api/v1/users/register",
+            "/api/payment/callback/**",
+            "/api/ai-chat/**"
+    };
+
+    private static final String[] SWAGGER_API = {
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html",
-            "/api/payment/**",
-            "/api/ai-chat/**"
+            "/swagger-ui.html"
     };
 
 
@@ -56,10 +60,16 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(PUBLIC_API).permitAll()
-                        .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(PUBLIC_API).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/rooms/**", "/api/v1/hotels/**").permitAll();
+                    
+                    if (!"prod".equals(activeProfile)) {
+                        auth.requestMatchers(SWAGGER_API).permitAll();
+                    }
+                    
+                    auth.anyRequest().authenticated();
+                })
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService))
                         .successHandler((request, response, authentication) -> {
@@ -125,10 +135,18 @@ public class SecurityConfig {
 
     @Bean
     public WebSecurityCustomizer ignoreResources() {
-        return web -> web.ignoring().requestMatchers(
-                "/actuator/**", "/v3/**", "/webjars/**",
-                "/swagger-ui*/**", "/favicon.ico"
-        );
+        return web -> {
+            if (!"prod".equals(activeProfile)) {
+                web.ignoring().requestMatchers(
+                        "/actuator/**", "/v3/**", "/webjars/**",
+                        "/swagger-ui*/**", "/favicon.ico"
+                );
+            } else {
+                web.ignoring().requestMatchers(
+                        "/actuator/**", "/favicon.ico"
+                );
+            }
+        };
     }
 
     @Bean

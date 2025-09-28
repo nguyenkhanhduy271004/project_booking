@@ -194,4 +194,12 @@ public class RoomController {
         return new ResponseSuccess(HttpStatus.OK, "Get history booking of room successfully",
                 response);
     }
+
+    @PutMapping
+    public ResponseSuccess updateStatusRooms(@RequestBody List<Long> ids, @RequestParam Boolean status) {
+
+        roomService.updateStatusRoom(ids, status);
+
+        return new ResponseSuccess(HttpStatus.OK, "Status rooms updated successfully");
+    }
 }

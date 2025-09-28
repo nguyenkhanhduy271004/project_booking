@@ -38,7 +38,6 @@ public class AIChatController {
     public ResponseEntity<Map<String, Object>> warmupCache() {
         long startTime = System.currentTimeMillis();
         
-        // Warm up với các câu hỏi phổ biến
         String[] commonQuestions = {
             "khách sạn ở hà nội",
             "khách sạn ở sài gòn", 
