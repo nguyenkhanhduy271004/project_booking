@@ -33,3 +33,4 @@ build/
 .vscode/
 jenkins-data
 .env
+*.env
