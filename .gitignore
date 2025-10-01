@@ -34,3 +34,4 @@ build/
 jenkins-data
 .env
 *.env
+/.env
