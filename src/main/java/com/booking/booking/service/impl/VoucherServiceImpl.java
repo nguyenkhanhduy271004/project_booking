@@ -34,40 +34,37 @@ public class VoucherServiceImpl implements VoucherService {
     @Override
     public void createVoucher(VoucherCreateRequest request) {
         User user = userContext.getCurrentUser();
-        Hotel hotel;
 
+        Hotel hotel;
         if (UserType.ADMIN.equals(user.getType())) {
             hotel = hotelRepository.findById(request.getHotelId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Hotel not found with id: " + request.getHotelId()));
-        } else {
+        } else if (UserType.MANAGER.equals(user.getType())) {
             hotel = hotelRepository.findByManagerAndIsDeletedFalse(user)
                     .orElseThrow(() -> new ResourceNotFoundException("Hotel not found for current user"));
-
-            if (!user.getId().equals(hotel.getManager().getId())) {
-                log.warn("User {} is not authorized to create voucher for hotel {}", user.getId(),
-                        hotel.getId());
-                throw new BadRequestException("You are not authorized to create voucher for this hotel");
-            }
+        } else {
+            throw new BadRequestException("Only ADMIN or MANAGER can create vouchers");
         }
 
         if (voucherRepository.existsByVoucherCode(request.getVoucherCode())) {
             throw new BadRequestException("Voucher code already exists");
         }
 
-        Voucher voucher = new Voucher();
-        voucher.setHotel(hotel);
-        voucher.setStatus(request.getStatus());
-        voucher.setQuantity(request.getQuantity());
+        Voucher voucher = Voucher.builder()
+                .hotel(hotel)
+                .status(request.getStatus())
+                .quantity(request.getQuantity())
+                .voucherCode(request.getVoucherCode())
+                .voucherName(request.getVoucherName())
+                .expiredDate(request.getExpiredDate())
+                .percentDiscount(request.getPercentDiscount())
+                .priceCondition(request.getPriceCondition())
+                .build();
         voucher.setCreatedAt(Date.from(Instant.now()));
-        voucher.setVoucherCode(request.getVoucherCode());
-        voucher.setVoucherName(request.getVoucherName());
-        voucher.setExpiredDate(request.getExpiredDate());
-        voucher.setPercentDiscount(request.getPercentDiscount());
-        voucher.setPriceCondition(request.getPriceCondition());
-
         voucherRepository.save(voucher);
     }
+
 
     @Override
     public void updateVoucher(Long id, VoucherUpdateRequest request) {

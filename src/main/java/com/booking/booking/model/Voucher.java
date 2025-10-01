@@ -18,15 +18,15 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 
 @Entity
 @Table(name = "tbl_voucher")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Voucher extends AbstractEntity<Long> implements Serializable {
 
   @NotBlank
