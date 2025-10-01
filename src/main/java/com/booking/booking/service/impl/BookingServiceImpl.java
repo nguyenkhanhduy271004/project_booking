@@ -10,7 +10,7 @@ import com.booking.booking.exception.*;
 import com.booking.booking.mapper.BookingMapper;
 import com.booking.booking.model.*;
 import com.booking.booking.repository.*;
-import com.booking.booking.service.BookingService;
+import com.booking.booking.service.interfaces.BookingService;
 import com.booking.booking.util.BookingUtil;
 import com.booking.booking.util.UserContext;
 import jakarta.transaction.Transactional;
@@ -53,10 +53,10 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public List<BookingResponse> createBooking(BookingRequest request) {
         if (request.getHotelId() == null) {
-            throw new BadRequestException("hotelId is required");
+            throw new BadRequestException("HotelID is required");
         }
         if (request.getRoomIds() == null || request.getRoomIds().isEmpty()) {
-            throw new BadRequestException("roomIds is required");
+            throw new BadRequestException("RoomIDs is required");
         }
         validateBookingDates(request.getCheckInDate(), request.getCheckOutDate());
 
@@ -66,7 +66,7 @@ public class BookingServiceImpl implements BookingService {
 
         long nights = ChronoUnit.DAYS.between(request.getCheckInDate(), request.getCheckOutDate());
         if (nights <= 0) {
-            throw new BadRequestException("checkOutDate must be after checkInDate");
+            throw new BadRequestException("Checkout date must be after checkin date");
         }
 
         BigDecimal total = rooms.stream()
@@ -205,9 +205,16 @@ public class BookingServiceImpl implements BookingService {
 
     private void validateRoomAvailability(List<Room> rooms, List<Long> roomIds, LocalDate checkIn,
                                           LocalDate checkOut) {
+
+        User user = userContext.getCurrentUser();
+
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
         for (Room room : rooms) {
-            if (!room.isAvailable()) {
-                throw new BadRequestException("Room " + room.getId() + " is not available for booking");
+            if (!room.isAvailable() && !room.getHeldByUserId().equals(user.getId())) {
+                throw new BadRequestException("Room is held by another user.");
             }
         }
 
@@ -245,6 +252,17 @@ public class BookingServiceImpl implements BookingService {
 
 
     public Page<BookingResponse> getAllBookings(Pageable pageable) {
+
+        User user = userContext.getCurrentUser();
+
+        if (user.getType().equals(UserType.MANAGER) || user.getType().equals(UserType.STAFF)) {
+
+
+            return bookingRepository.findAllByIsDeletedFalseAndHotel(pageable, user.getHotel())
+                    .map(bookingMapper::toBookingResponse);
+
+        }
+
         return bookingRepository.findAllByIsDeletedFalse(pageable)
                 .map(bookingMapper::toBookingResponse);
     }

@@ -14,11 +14,11 @@ public class BookingUtil {
 
     public void handleBookingWithStatus(Booking booking, BookingStatus bookingStatus) {
         switch (bookingStatus) {
-            case CHECKIN -> {
+            case CHECKIN, PAYING, CONFIRMED -> {
                 booking.getRooms().forEach(room -> room.setAvailable(false));
                 roomRepository.saveAll(booking.getRooms());
             }
-            case CANCELLED, EXPIRED, CHECKOUT, COMPLETED -> {
+            case  CANCELLED, EXPIRED, CHECKOUT, COMPLETED -> {
                 booking.getRooms().forEach(room -> room.setAvailable(true));
                 roomRepository.saveAll(booking.getRooms());
             }

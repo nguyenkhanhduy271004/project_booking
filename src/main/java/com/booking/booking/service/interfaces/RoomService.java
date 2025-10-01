@@ -1,4 +1,4 @@
-package com.booking.booking.service;
+package com.booking.booking.service.interfaces;
 
 import com.booking.booking.dto.RoomDTO;
 import com.booking.booking.dto.response.RoomResponse;
@@ -21,9 +21,7 @@ public interface RoomService {
 
     RoomResponse createRoom(RoomDTO room, MultipartFile[] imagesRoom);
 
-
     RoomResponse updateRoom(Long id, RoomDTO updatedRoom, MultipartFile[] images, String keepImagesJson) throws ResourceNotFoundException;
-
 
     void softDeleteRoom(Long id);
 
@@ -46,4 +44,6 @@ public interface RoomService {
     List<LocalDate> getUnavailableDates(Long roomId, LocalDate from, LocalDate to);
 
     void updateStatusRoom(List<Long> ids, Boolean status);
+
+    void holdRooms(List<Long> ids);
 }

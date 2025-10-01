@@ -1,4 +1,4 @@
-package com.booking.booking.service;
+package com.booking.booking.service.interfaces;
 
 import com.booking.booking.dto.response.PageResponse;
 import com.booking.booking.dto.response.UserResponse;

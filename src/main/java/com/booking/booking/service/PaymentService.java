@@ -56,6 +56,7 @@ public class PaymentService {
     public CreateMomoResponse createQR(long bookingId) {
         Booking booking = findBookingOrThrow(bookingId);
         booking.setStatus(BookingStatus.PAYING);
+        bookingUtil.handleBookingWithStatus(booking, BookingStatus.PAYING);
         bookingRepository.save(booking);
 
         BigDecimal price = booking.getTotalPrice();
@@ -132,12 +133,14 @@ public class PaymentService {
         log.info("Booking code: {}", shortCode);
         Booking booking = bookingRepository.findByBookingCode(shortCode).orElseThrow(() -> new ResourceNotFoundException("Booking not found with code: " + shortCode));
         booking.setStatus(BookingStatus.CONFIRMED);
+        bookingUtil.handleBookingWithStatus(booking, BookingStatus.CONFIRMED);
         bookingRepository.save(booking);
     }
 
     public PaymentDTO.VNPayResponse createVnPayPayment(String bookingCode, String bankCode, HttpServletRequest req) {
         Booking booking = findBookingByCodeOrThrow(bookingCode);
         booking.setStatus(BookingStatus.PAYING);
+        bookingUtil.handleBookingWithStatus(booking, BookingStatus.PAYING);
         bookingRepository.save(booking);
 
         BigDecimal price = booking.getTotalPrice().multiply(BigDecimal.valueOf(100));

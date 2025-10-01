@@ -5,7 +5,7 @@ import com.booking.booking.dto.request.VoucherUpdateRequest;
 import com.booking.booking.dto.response.PageResponse;
 import com.booking.booking.dto.response.ResponseSuccess;
 import com.booking.booking.model.Voucher;
-import com.booking.booking.service.VoucherService;
+import com.booking.booking.service.interfaces.VoucherService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

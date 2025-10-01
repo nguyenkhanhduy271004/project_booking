@@ -2,7 +2,7 @@ package com.booking.booking.controller;
 
 import com.booking.booking.dto.request.EvaluateRequest;
 import com.booking.booking.dto.response.ResponseSuccess;
-import com.booking.booking.service.EvaluateService;
+import com.booking.booking.service.interfaces.EvaluateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

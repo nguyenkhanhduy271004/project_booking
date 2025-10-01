@@ -7,12 +7,10 @@ import com.booking.booking.mapper.EvaluateMapper;
 import com.booking.booking.model.Evaluate;
 import com.booking.booking.model.User;
 import com.booking.booking.repository.EvaluateRepository;
-import com.booking.booking.repository.RoomRepository;
-import com.booking.booking.service.EvaluateService;
+import com.booking.booking.service.interfaces.EvaluateService;
 import com.booking.booking.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service

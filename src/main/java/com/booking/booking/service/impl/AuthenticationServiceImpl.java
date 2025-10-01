@@ -10,9 +10,9 @@ import com.booking.booking.exception.*;
 import com.booking.booking.mapper.UserMapper;
 import com.booking.booking.model.User;
 import com.booking.booking.repository.UserRepository;
-import com.booking.booking.service.AuthenticationService;
+import com.booking.booking.service.interfaces.AuthenticationService;
 import com.booking.booking.service.EmailService;
-import com.booking.booking.service.JwtService;
+import com.booking.booking.service.interfaces.JwtService;
 import com.google.gson.Gson;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -94,7 +94,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         User savedUser = userRepository.save(userMapper.toUserEntity(registerRequest));
 
-        emailService.emailVerification(savedUser.getEmail(), savedUser.getUsername());
+        emailService.sendVerificationEmail(savedUser.getEmail(), savedUser.getUsername());
 
         VerifyAccountInfo info = new VerifyAccountInfo(savedUser.getEmail(), savedUser.getUsername());
         String message = gson.toJson(info);

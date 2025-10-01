@@ -5,7 +5,7 @@ import com.booking.booking.dto.response.PageResponse;
 import com.booking.booking.dto.response.ResponseSuccess;
 import com.booking.booking.mapper.HotelMapper;
 import com.booking.booking.model.Hotel;
-import com.booking.booking.service.HotelService;
+import com.booking.booking.service.interfaces.HotelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

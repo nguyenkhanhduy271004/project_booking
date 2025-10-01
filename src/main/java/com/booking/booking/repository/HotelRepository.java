@@ -43,4 +43,24 @@ public interface HotelRepository extends JpaRepository<Hotel, Long>,
 
     Optional<Hotel> findByManagerAndIsDeletedFalse(User manager);
 
+    Long countByIsDeletedFalse();
+
+    @Query(value = """
+        SELECT h.id, h.name, COUNT(b.id) as bookingCount, 
+               COALESCE(SUM(b.total_price), 0) as totalRevenue,
+               0 as averageRating,
+               ROUND((COUNT(b.id) * 100.0 / NULLIF(h.total_rooms * :months, 0)), 2) as occupancyRate
+        FROM tbl_hotel h
+        LEFT JOIN tbl_booking b ON b.hotel_id = h.id 
+            AND b.status IN ('COMPLETED', 'CONFIRMED')
+            AND b.created_at >= :startDate
+        WHERE h.is_deleted = false
+        GROUP BY h.id, h.name, h.total_rooms
+        ORDER BY bookingCount DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Object> findTopHotelsByBookingCount(@Param("limit") int limit, 
+                                           @Param("months") int months,
+                                           @Param("startDate") java.time.LocalDateTime startDate);
+
 }

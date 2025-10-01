@@ -6,8 +6,8 @@ import com.booking.booking.dto.response.PageResponse;
 import com.booking.booking.dto.response.ResponseSuccess;
 import com.booking.booking.dto.response.RoomResponse;
 import com.booking.booking.exception.ResourceNotFoundException;
-import com.booking.booking.service.BookingService;
-import com.booking.booking.service.RoomService;
+import com.booking.booking.service.interfaces.BookingService;
+import com.booking.booking.service.interfaces.RoomService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -201,5 +201,12 @@ public class RoomController {
         roomService.updateStatusRoom(ids, status);
 
         return new ResponseSuccess(HttpStatus.OK, "Status rooms updated successfully");
+    }
+
+    @PutMapping("/hold")
+    public ResponseSuccess holdRooms(@RequestBody List<Long> ids) {
+
+        roomService.holdRooms(ids);
+        return new ResponseSuccess(HttpStatus.OK, "Room has been holded successfully");
     }
 }

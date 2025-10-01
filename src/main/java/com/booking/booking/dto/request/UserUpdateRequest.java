@@ -1,5 +1,6 @@
 package com.booking.booking.dto.request;
 
+import com.booking.booking.common.UserStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -39,4 +40,7 @@ public class UserUpdateRequest implements Serializable {
 
   @Pattern(regexp = "^(ADMIN|MANAGER|STAFF|GUEST)$", message = "Type must be one of ADMIN, MANAGER, STAFF, GUEST")
   private String type;
+
+  @Pattern(regexp = "^(NONE|ACTIVE|INACTIVE)$", message = "Type must be one of NONE, ACTIVE, INACTIVE")
+  private String status;
 }

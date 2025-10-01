@@ -1,28 +1,14 @@
 package com.booking.booking.model;
 
 import com.booking.booking.common.TypeRoom;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.*;
+import lombok.*;
+
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.EqualsAndHashCode;
 
 @Data
 @Entity
@@ -33,37 +19,41 @@ import lombok.EqualsAndHashCode;
 @Table(name = "tbl_room")
 public class Room extends AbstractEntity<Long> implements Serializable {
 
-  @Enumerated(EnumType.STRING)
-  private TypeRoom typeRoom;
-  private int capacity;
-  private double pricePerNight;
-  private boolean available;
+    private int capacity;
+    @Enumerated(EnumType.STRING)
+    private TypeRoom typeRoom;
+    private boolean available;
+    private double pricePerNight;
+    private LocalDateTime holdExpiresAt;
 
-  @ElementCollection
-  @CollectionTable(name = "room_images", joinColumns = @JoinColumn(name = "room_id"))
-  @Column(name = "image_url")
-  @Builder.Default
-  private List<String> listImageUrl = new ArrayList<>();
+    @Column(name = "held_by_user_id")
+    private Long heldByUserId;
 
-  @ManyToOne
-  @JoinColumn(name = "hotel_id", nullable = false)
-  @JsonIgnore
-  private Hotel hotel;
+    @ElementCollection
+    @CollectionTable(name = "room_images", joinColumns = @JoinColumn(name = "room_id"))
+    @Column(name = "image_url")
+    @Builder.Default
+    private List<String> listImageUrl = new ArrayList<>();
 
-  @ManyToMany(mappedBy = "rooms")
-  @Builder.Default
-  @JsonIgnore
-  private List<Booking> bookings = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "hotel_id", nullable = false)
+    @JsonIgnore
+    private Hotel hotel;
 
-  @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
-  private List<Evaluate> evaluates = new ArrayList<>();
+    @ManyToMany(mappedBy = "rooms")
+    @Builder.Default
+    @JsonIgnore
+    private List<Booking> bookings = new ArrayList<>();
+
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Evaluate> evaluates = new ArrayList<>();
 
 
-  @ElementCollection
-  @CollectionTable(name = "room_services", joinColumns = @JoinColumn(name = "room_id"))
-  @Column(name = "service")
-  @Builder.Default
-  private List<String> services = new ArrayList<>();
+    @ElementCollection
+    @CollectionTable(name = "room_services", joinColumns = @JoinColumn(name = "room_id"))
+    @Column(name = "service")
+    @Builder.Default
+    private List<String> services = new ArrayList<>();
 
 }

@@ -4,7 +4,7 @@ import com.booking.booking.dto.request.BookingRequest;
 import com.booking.booking.dto.response.BookingResponse;
 import com.booking.booking.dto.response.PageResponse;
 import com.booking.booking.dto.response.ResponseSuccess;
-import com.booking.booking.service.BookingService;
+import com.booking.booking.service.interfaces.BookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class BookingController {
     @Operation(summary = "Get All Bookings", description = "API to retrieve all bookings with pagination")
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'STAFF')")
     public ResponseSuccess getAllBookings(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -115,7 +115,7 @@ public class BookingController {
     @Operation(summary = "Delete Booking Permanently", description = "API to permanently delete a booking by ID")
     @DeleteMapping("/{id}/permanent")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteBookingPermanently(@PathVariable Long id) {
         bookingService.deleteBookingPermanently(id);
         return new ResponseSuccess(HttpStatus.NO_CONTENT, "Booking permanently deleted");
@@ -124,7 +124,7 @@ public class BookingController {
     @Operation(summary = "Delete Bookings Permanently", description = "API to permanently delete multiple bookings by IDs")
     @DeleteMapping("/permanent")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SYSTEM_ADMIN', 'ADMIN')")
     public ResponseSuccess deleteBookingsPermanently(@RequestBody List<Long> ids) {
         bookingService.deleteBookingsPermanently(ids);
         return new ResponseSuccess(HttpStatus.NO_CONTENT, "Bookings permanently deleted");

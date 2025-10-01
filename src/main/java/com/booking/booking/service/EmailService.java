@@ -1,218 +1,85 @@
 package com.booking.booking.service;
 
 import com.booking.booking.dto.request.VerifyAccountInfo;
-import com.booking.booking.model.Booking;
 import com.google.gson.Gson;
-import com.sendgrid.Method;
-import com.sendgrid.Request;
-import com.sendgrid.Response;
-import com.sendgrid.SendGrid;
-import com.sendgrid.helpers.mail.Mail;
-import com.sendgrid.helpers.mail.objects.Content;
-import com.sendgrid.helpers.mail.objects.Email;
-import com.sendgrid.helpers.mail.objects.Personalization;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j(topic = "EMAIL-SERVICE")
+@RequiredArgsConstructor
 public class EmailService {
 
-  private final Gson gson;
-  @Value("${spring.sendgrid.from-email}")
-  private String from;
+    private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
+    private final RedisService redisService;
+    private final Gson gson;
 
-  @Value("${spring.sendgrid.template-id}")
-  private String templateId;
+    @Value("${spring.mail.username}")
+    private String from;
 
-  @Value("${spring.sendgrid.verification-link}")
-  private String verificationLink;
+    @Value("${spring.sendgrid.verification-link}")
+    private String verificationLink;
 
-  private final SendGrid sendGrid;
-  private final RedisService redisService;
+    public void sendSimpleEmail(String to, String subject, String body) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(body);
 
-  public void send(String to, String subject, String body) {
-    Email fromEmail = new Email(from);
-    Email toEmail = new Email(to);
-
-    Content content = new Content("text/plain", body);
-
-    Mail mail = new Mail(fromEmail, subject, toEmail, content);
-
-    Request request = new Request();
-
-    try {
-      request.setMethod(Method.POST);
-      request.setEndpoint("mail/send");
-      request.setBody(mail.build());
-
-      Response response = sendGrid.api(request);
-
-      if (response.getStatusCode() == 202) {
-        log.info("Email sent successfully");
-      } else {
-        log.error("Email sent failed");
-      }
-
-    } catch (IOException e) {
-      log.error("Error occured while sending email error: {}", e.getMessage());
+        mailSender.send(message);
+        log.info("Đã gửi email đơn giản đến {}", to);
     }
 
-  }
+    public void sendVerificationEmail(String to, String username) {
+        String secretCode = UUID.randomUUID().toString();
+        String fullLink = verificationLink + "?secretCode=" + secretCode;
 
-  public void emailVerification(String to, String name) {
-    Email fromEmail = new Email(from, "Booking App");
-    Email toEmail = new Email(to);
+        redisService.setWithTTL(secretCode, username, 5);
 
-    String subject = "Xác thực tài khoản";
+        Context context = new Context();
+        context.setVariable("name", username);
+        context.setVariable("verificationLink", fullLink);
 
-    Map<String, String> map = new HashMap<>();
+        String htmlContent = templateEngine.process("email-verification", context);
 
-    String secretCode = UUID.randomUUID().toString();
-
-    String secretCodeLink = String.format("?secretCode=%s", secretCode);
-
-    redisService.setWithTTL(secretCode, name, 5);
-
-    map.put("name", name);
-    map.put("verification_link", verificationLink + secretCodeLink);
-
-    Mail mail = new Mail();
-    mail.setFrom(fromEmail);
-    mail.setSubject(subject);
-
-    Personalization personalization = new Personalization();
-    personalization.addTo(toEmail);
-
-    map.forEach(personalization::addDynamicTemplateData);
-
-    mail.addPersonalization(personalization);
-    mail.setTemplateId(templateId);
-
-    Request request = new Request();
-    try {
-      request.setMethod(Method.POST);
-      request.setEndpoint("mail/send");
-      request.setBody(mail.build());
-
-      Response response = sendGrid.api(request);
-
-      if (response.getStatusCode() == 202) {
-        log.info("Verification sent successfully");
-      } else {
-        log.error("Verification failed");
-      }
-
-    } catch (IOException e) {
-      log.error("Error occured while Verification email error: {}", e.getMessage());
-    }
-  }
-
-  @KafkaListener(topics = "verify-account-topic", groupId = "verify-account-group")
-  public void emailVerificationByKafka(String message) {
-    Email fromEmail = new Email(from, "Booking app");
-
-    VerifyAccountInfo accountInfo = gson.fromJson(message, VerifyAccountInfo.class);
-
-    Email toEmail = new Email(accountInfo.getEmail());
-
-    String subject = "Xác thực tài khoản";
-
-    Map<String, String> map = new HashMap<>();
-
-    String secretCode = UUID.randomUUID().toString();
-
-    String secretCodeLink = String.format("?secretCode=%s", secretCode);
-
-    redisService.setWithTTL(secretCode, accountInfo.getUsername(), 5);
-
-    map.put("name", accountInfo.getUsername());
-    map.put("verification_link", verificationLink + secretCodeLink);
-
-    Mail mail = new Mail();
-    mail.setFrom(fromEmail);
-    mail.setSubject(subject);
-
-    Personalization personalization = new Personalization();
-    personalization.addTo(toEmail);
-
-    map.forEach(personalization::addDynamicTemplateData);
-
-    mail.addPersonalization(personalization);
-    mail.setTemplateId(templateId);
-
-    Request request = new Request();
-    try {
-      request.setMethod(Method.POST);
-      request.setEndpoint("mail/send");
-      request.setBody(mail.build());
-
-      Response response = sendGrid.api(request);
-
-      if (response.getStatusCode() == 202) {
-        log.info("Verification sent successfully");
-      } else {
-        log.error("Verification failed");
-      }
-
-    } catch (IOException e) {
-      log.error("Error occured while Verification email error: {}", e.getMessage());
-    }
-  }
-
-  public void sendBookingConfirmation(String to, Booking booking) {
-    Email fromEmail = new Email(from, "Booking App");
-    Email toEmail = new Email(to);
-
-    String subject = "Booking Confirmation - " + booking.getBookingCode();
-
-    StringBuilder bodyBuilder = new StringBuilder();
-    bodyBuilder.append("Dear ").append(booking.getGuest().getFirstName()).append(" ")
-        .append(booking.getGuest().getLastName()).append(",\n\n");
-    bodyBuilder.append("Your booking has been confirmed!\n\n");
-    bodyBuilder.append("Booking Details:\n");
-    bodyBuilder.append("Booking Code: ").append(booking.getBookingCode()).append("\n");
-    bodyBuilder.append("Hotel: ").append(booking.getHotel().getName()).append("\n");
-    bodyBuilder.append("Check-in Date: ").append(booking.getCheckInDate()).append("\n");
-    bodyBuilder.append("Check-out Date: ").append(booking.getCheckOutDate()).append("\n");
-    bodyBuilder.append("Total Price: $").append(booking.getTotalPrice()).append("\n");
-    bodyBuilder.append("Payment Type: ").append(booking.getPaymentType()).append("\n");
-
-    if (booking.getNotes() != null && !booking.getNotes().isEmpty()) {
-      bodyBuilder.append("Notes: ").append(booking.getNotes()).append("\n");
+        sendHtmlEmail(to, "Xác thực tài khoản", htmlContent);
     }
 
-    bodyBuilder.append("\nThank you for choosing our service!\n\n");
-    bodyBuilder.append("Best regards,\nBooking Team");
+    public void sendHtmlEmail(String to, String subject, String htmlBody) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
 
-    Content content = new Content("text/plain", bodyBuilder.toString());
-    Mail mail = new Mail(fromEmail, subject, toEmail, content);
+            helper.setFrom(from);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
 
-    Request request = new Request();
-
-    try {
-      request.setMethod(Method.POST);
-      request.setEndpoint("mail/send");
-      request.setBody(mail.build());
-
-      Response response = sendGrid.api(request);
-
-      if (response.getStatusCode() == 202) {
-        log.info("Booking confirmation email sent successfully to: {}", to);
-      } else {
-        log.error("Failed to send booking confirmation email to: {}", to);
-      }
-
-    } catch (IOException e) {
-      log.error("Error occurred while sending booking confirmation email to: {}, error: {}", to, e.getMessage());
+            mailSender.send(message);
+            log.info("Gửi email HTML đến {} thành công", to);
+        } catch (MessagingException e) {
+            log.error("Gửi email HTML đến {} thất bại: {}", to, e.getMessage());
+        }
     }
-  }
+
+    @KafkaListener(topics = "verify-account-topic", groupId = "verify-account-group")
+    public void emailVerificationByKafka(String message) {
+        VerifyAccountInfo info = gson.fromJson(message, VerifyAccountInfo.class);
+        sendVerificationEmail(info.getEmail(), info.getUsername());
+    }
 }

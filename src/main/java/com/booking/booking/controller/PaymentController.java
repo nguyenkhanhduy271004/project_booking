@@ -41,7 +41,7 @@ public class PaymentController {
 
     @PostMapping("/process")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Map<String, Object>> processPayment(
+    public ResponseSuccess processPayment(
             @RequestParam Long bookingId,
             @RequestParam String paymentMethod,
             @RequestParam(required = false) String bankCode,
@@ -78,22 +78,17 @@ public class PaymentController {
                     break;
                     
                 default:
-                    return ResponseEntity.badRequest()
-                            .body(Map.of("error", "Unsupported payment method: " + paymentMethod));
+                    return new ResponseSuccess(HttpStatus.BAD_REQUEST, "Invalid PaymentMethod");
             }
             
             response.put("bookingId", bookingId);
             response.put("success", true);
             
-            return ResponseEntity.ok(response);
+            return new ResponseSuccess(HttpStatus.OK, "Get momo qr success", response);
             
         } catch (Exception e) {
             log.error("Error processing payment for booking {}: {}", bookingId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                        "success", false,
-                        "error", "Failed to process payment: " + e.getMessage()
-                    ));
+            return new ResponseSuccess(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error");
         }
     }
 

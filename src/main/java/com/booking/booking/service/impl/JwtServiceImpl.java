@@ -3,7 +3,7 @@ package com.booking.booking.service.impl;
 import com.booking.booking.common.TokenType;
 import com.booking.booking.exception.AccessDeniedException;
 import com.booking.booking.exception.InvalidDataException;
-import com.booking.booking.service.JwtService;
+import com.booking.booking.service.interfaces.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;

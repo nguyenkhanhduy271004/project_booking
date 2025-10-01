@@ -9,7 +9,7 @@ public class VerifyOtpRequest {
 
   @NotBlank(message = "OTP is not be blank")
   private Integer otp;
-  @NotBlank(message = "Email is not be blank")
-  @Email(message = "Email is not valid")
-  private String email;
+  @NotBlank(message = "Username is not be blank")
+  @Email(message = "Username is not valid")
+  private String username;
 }

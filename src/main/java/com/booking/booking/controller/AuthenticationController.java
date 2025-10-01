@@ -6,7 +6,7 @@ import com.booking.booking.dto.request.SignInRequest;
 import com.booking.booking.dto.response.LoginResponse;
 import com.booking.booking.dto.response.ResponseSuccess;
 import com.booking.booking.dto.response.TokenResponse;
-import com.booking.booking.service.AuthenticationService;
+import com.booking.booking.service.interfaces.AuthenticationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

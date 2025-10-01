@@ -37,11 +37,15 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_API = {
             "/api/auth/**",
-            "/api/v1/users/confirmEmail",
+            "/api/v1/users/confirm-email",
+            "/api/v1/users/verify-otp",
+            "/api/v1/users/verify-mail/**",
+            "/api/v1/users/reset-password/**",
             "/api/v1/users/forgotPassword",
             "/api/v1/users/register",
             "/api/payment/callback/**",
-            "/api/ai-chat/**"
+            "/api/ai-chat/**",
+            "/api/payment/momo-return",
     };
 
     private static final String[] SWAGGER_API = {

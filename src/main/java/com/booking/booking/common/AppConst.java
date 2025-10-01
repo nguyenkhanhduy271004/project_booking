@@ -1,4 +1,4 @@
-package com.booking.booking.util;
+package com.booking.booking.common;
 
 public interface AppConst {
   String SEARCH_OPERATOR = "(\\w+?)(:|<|>)(.*)";

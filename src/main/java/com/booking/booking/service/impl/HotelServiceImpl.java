@@ -17,7 +17,7 @@ import com.booking.booking.repository.RoomRepository;
 import com.booking.booking.repository.UserRepository;
 import com.booking.booking.repository.VoucherRepository;
 import com.booking.booking.service.CloudinaryService;
-import com.booking.booking.service.HotelService;
+import com.booking.booking.service.interfaces.HotelService;
 import com.booking.booking.util.AuthorizationUtils;
 import com.booking.booking.util.UserContext;
 import lombok.RequiredArgsConstructor;
@@ -98,7 +98,6 @@ public class HotelServiceImpl implements HotelService {
     @Override
     @Transactional
     public Hotel createHotel(HotelDTO hotelDTO, MultipartFile imageHotel) {
-
         Hotel hotel = hotelMapper.toHotel(hotelDTO);
 
         if (imageHotel != null && !imageHotel.isEmpty()) {

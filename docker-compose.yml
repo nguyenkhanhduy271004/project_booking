@@ -59,7 +59,7 @@ services:
 
   backend-service:
     container_name: backend-service
-    image: nguyenduy271004/booking:20241218-fixed
+    image: nguyenduy271004/backend-service:latest
     platform: linux/amd64
     #build:
     #  context: ./

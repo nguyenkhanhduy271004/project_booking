@@ -17,7 +17,7 @@ public class EmailController {
     @GetMapping("/send-email")
     public void send(@RequestParam String to, @RequestParam String subject, @RequestParam String body) {
         log.info("Sending email to " + to);
-        emailService.send(to, subject, body);
+        emailService.sendSimpleEmail(to, subject, body);
 
         log.info("Email sent to " + to + " successfully");
     }
@@ -25,7 +25,7 @@ public class EmailController {
     @GetMapping("/verify-email")
     public void emailVerification(@RequestParam String to, @RequestParam String name) {
         log.info("Verification email to " + to);
-        emailService.emailVerification(to, name);
+        emailService.sendVerificationEmail(to, name);
     }
 
 

@@ -1,5 +1,6 @@
 package com.booking.booking.service.impl;
 
+import com.booking.booking.common.UserType;
 import com.booking.booking.dto.RoomDTO;
 import com.booking.booking.dto.response.RoomResponse;
 import com.booking.booking.exception.BadRequestException;
@@ -9,11 +10,12 @@ import com.booking.booking.mapper.RoomMapper;
 import com.booking.booking.model.Booking;
 import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Room;
+import com.booking.booking.model.User;
 import com.booking.booking.repository.BookingRepository;
 import com.booking.booking.repository.HotelRepository;
 import com.booking.booking.repository.RoomRepository;
 import com.booking.booking.service.CloudinaryService;
-import com.booking.booking.service.RoomService;
+import com.booking.booking.service.interfaces.RoomService;
 import com.booking.booking.util.UserContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -22,10 +24,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,9 +50,18 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public Page<RoomResponse> getAllRoomsWithHotelName(Pageable pageable, boolean deleted) {
+        User user = userContext.getCurrentUser();
+        if (user.getType().equals(UserType.MANAGER) || user.getType().equals(UserType.STAFF)) {
+
+            Page<Room> rooms = deleted ? roomRepository.findAllByIsDeletedTrueAndHotel(pageable, user.getHotel())
+                    : roomRepository.findAllByIsDeletedFalseAndHotel(pageable, user.getHotel());
+            return rooms.map(roomMapper::toRoomResponseDTO);
+
+        }
         Page<Room> rooms = deleted ? roomRepository.findAllByIsDeletedTrue(pageable)
                 : roomRepository.findAllByIsDeletedFalse(pageable);
         return rooms.map(roomMapper::toRoomResponseDTO);
+
     }
 
     @Override
@@ -326,6 +339,44 @@ public class RoomServiceImpl implements RoomService {
         rooms.forEach(room -> room.setAvailable(status));
 
         roomRepository.saveAll(rooms);
+    }
+
+    @Override
+    public void holdRooms(List<Long> ids) {
+        List<Room> rooms = roomRepository.findAllById(ids);
+
+        if (rooms.size() != ids.size()) {
+            throw new ResourceNotFoundException("One or more room IDs not found");
+        }
+
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
+        User user = userContext.getCurrentUser();
+
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        rooms.forEach(room -> {
+            room.setAvailable(false);
+            room.setHeldByUserId(user.getId());
+            room.setHoldExpiresAt(expiresAt);
+        });
+
+        roomRepository.saveAll(rooms);
+    }
+
+
+    @Scheduled(fixedRate = 5 * 60 * 1000)
+    public void clearExpiredRoomHolds() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Room> expiredRooms = roomRepository.findRoomsToRelease(now);
+
+        expiredRooms.forEach(room -> {
+            room.setAvailable(true);
+            room.setHoldExpiresAt(null);
+        });
+
+        roomRepository.saveAll(expiredRooms);
     }
 
 

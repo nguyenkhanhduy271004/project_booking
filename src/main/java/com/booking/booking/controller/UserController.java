@@ -6,7 +6,7 @@ import com.booking.booking.dto.response.ResponseSuccess;
 import com.booking.booking.dto.response.UserPageResponse;
 import com.booking.booking.mapper.UserMapper;
 import com.booking.booking.model.User;
-import com.booking.booking.service.UserService;
+import com.booking.booking.service.interfaces.UserService;
 import com.booking.booking.util.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -190,23 +190,23 @@ public class UserController {
         } catch (Exception e) {
             log.error("Confirm email was failed!, errorMessage={}" + e.getMessage());
         } finally {
-            response.sendRedirect("http://localhost:3000");
+            response.sendRedirect("http://localhost:5172");
         }
     }
 
-    @PostMapping("/active-account/{email}")
-    public ResponseSuccess activeAccount(@PathVariable String email) {
-        log.info("Active account: {}", email);
+    @PostMapping("/active-account/{username}")
+    public ResponseSuccess activeAccount(@PathVariable String username) {
+        log.info("Active account: {}", username);
 
-        userService.activeAccount(email);
+        userService.activeAccount(username);
         return new ResponseSuccess(HttpStatus.OK, "Active account successfully");
     }
 
-    @PostMapping("/verify-mail/{email}")
-    public ResponseSuccess verifyEmail(@PathVariable String email) {
-        log.info("Verify email: {}", email);
+    @PostMapping("/verify-mail/{username}")
+    public ResponseSuccess verifyEmail(@PathVariable String username) {
+        log.info("Verify username: {}", username);
 
-        userService.verifyEmail(email);
+        userService.verifyEmail(username);
 
         return new ResponseSuccess(HttpStatus.OK, "Email verified successfully");
     }
@@ -216,7 +216,7 @@ public class UserController {
 
         log.info("Verify otp: {}", req.getOtp());
 
-        boolean isTrue = userService.verifyOtp(req.getOtp(), req.getEmail());
+        boolean isTrue = userService.verifyOtp(req.getOtp(), req.getUsername());
 
         if (!isTrue) {
             return new ResponseSuccess(HttpStatus.EXPECTATION_FAILED, "OTP is expired!");
@@ -225,13 +225,13 @@ public class UserController {
         return new ResponseSuccess(HttpStatus.OK, "OTP verified successfully");
     }
 
-    @PostMapping("/reset-password/{email}")
-    public ResponseSuccess resetPassword(@PathVariable String email,
+    @PostMapping("/reset-password/{username}")
+    public ResponseSuccess resetPassword(@PathVariable String username,
                                          @Valid @RequestBody ChangePasswordRequest req) {
 
         log.info("Change password: {}", req);
 
-        userService.resetPassword(email, req);
+        userService.resetPassword(username, req);
 
         return new ResponseSuccess(HttpStatus.OK, "Password changed successfully");
     }

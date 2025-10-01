@@ -58,6 +58,8 @@ public class HotelMapper {
         newHotel.setCreatedAt(now);
         newHotel.setUpdatedAt(now);
 
+        manager.setHotel(newHotel);
+
         return newHotel;
     }
 

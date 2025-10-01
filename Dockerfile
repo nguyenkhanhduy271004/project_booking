@@ -1,7 +1,9 @@
-FROM openjdk:21-jdk-slim
+FROM openjdk:17-alpine
 
-COPY target/booking-0.0.1-SNAPSHOT.jar backend-service.jar
+ARG JAR_FILE=target/*.jar
 
-EXPOSE 8080
+COPY ${JAR_FILE} backend-service.jar
 
 ENTRYPOINT ["java", "-jar", "backend-service.jar"]
+
+EXPOSE 8080

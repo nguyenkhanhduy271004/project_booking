@@ -1,4 +1,4 @@
-package com.booking.booking.service;
+package com.booking.booking.service.interfaces;
 
 import com.booking.booking.dto.request.LoginRequest;
 import com.booking.booking.dto.request.RegisterRequest;

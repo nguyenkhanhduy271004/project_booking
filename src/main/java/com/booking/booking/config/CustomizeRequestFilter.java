@@ -2,7 +2,7 @@ package com.booking.booking.config;
 
 import com.booking.booking.common.TokenType;
 import com.booking.booking.exception.AccessDeniedException;
-import com.booking.booking.service.JwtService;
+import com.booking.booking.service.interfaces.JwtService;
 import com.booking.booking.service.UserServiceDetail;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
