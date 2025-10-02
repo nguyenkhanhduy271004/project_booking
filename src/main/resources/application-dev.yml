@@ -7,7 +7,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: bogiaoffline@gmail.com
-    password: ${MAIL_PASSWORDit }
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
