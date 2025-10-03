@@ -1,9 +1,13 @@
-FROM openjdk:17-alpine
+# Stage 1: Build app
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-ARG JAR_FILE=target/*.jar
-
-COPY ${JAR_FILE} backend-service.jar
-
-ENTRYPOINT ["java", "-jar", "backend-service.jar"]
-
+# Stage 2: Run app
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

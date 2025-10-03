@@ -72,7 +72,7 @@ spring:
       enabled: false
 
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${KAFKA_SERVERS:kafka:9092}
 
   ai:
     openai:
@@ -126,7 +126,7 @@ cloudinary:
   api_secret: ${CLOUDINARY_SECRET}
 
 redis:
-  host: localhost
+  host: redis
   port: 6379
 
 booking:

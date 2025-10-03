@@ -13,28 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EvaluateResponse {
 
-    private Long id;
-    private Integer rating;
-    private String comment;
-    private String reply;
-    private boolean isApproved;
-    private boolean isHidden;
-
-    // Room information
-    private Long roomId;
-    private TypeRoom roomType;
-
-    // Hotel information
-    private Long hotelId;
-    private String hotelName;
-
-    // User information
-    private Long userId;
-    private String userName;
-
-    // Audit fields
-    private Date createdAt;
-    private Date updatedAt;
-    private String createdByUser;
-    private String updatedByUser;
+    private String message;
+    private float starRating;
+    private String reviewer;
 }

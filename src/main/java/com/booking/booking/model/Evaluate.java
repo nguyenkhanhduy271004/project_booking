@@ -27,5 +27,4 @@ public class Evaluate extends AbstractEntity<Long> implements Serializable {
     @JsonBackReference
     private Room room;
 
-
 }

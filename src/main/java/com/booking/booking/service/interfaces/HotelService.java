@@ -15,8 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface HotelService {
 
-    Page<Hotel> getAllHotels(Pageable pageable);
-
     Page<Hotel> getAllHotels(Pageable pageable, boolean deleted);
 
     PageResponse<?> advanceSearchWithSpecification(Pageable pageable, String[] hotel);
@@ -29,10 +27,6 @@ public interface HotelService {
 
     Hotel updateHotel(Long id, HotelDTO updatedHotel, MultipartFile imageHotel) throws ResourceNotFoundException;
 
-    void deleteHotel(Long id) throws ResourceNotFoundException;
-
-    void deleteHotels(List<Long> ids) throws ResourceNotFoundException;
-
     void softDeleteHotel(Long id);
 
     void softDeleteHotels(List<Long> ids);
@@ -44,10 +38,6 @@ public interface HotelService {
     void deleteHotelPermanently(Long id);
 
     void deleteHotelsPermanently(List<Long> ids);
-
-    Page<Hotel> getAllHotelsWithAuthorization(Pageable pageable, boolean deleted);
-
-    Optional<Hotel> getHotelByIdWithAuthorization(Long id);
 
     List<UserResponse> getListManagersForCreateOrUpdateHotel();
 }

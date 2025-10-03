@@ -1,6 +1,7 @@
 package com.booking.booking.mapper;
 
 import com.booking.booking.dto.request.EvaluateRequest;
+import com.booking.booking.dto.response.EvaluateResponse;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.model.Evaluate;
 import com.booking.booking.model.Room;
@@ -31,5 +32,12 @@ public class EvaluateMapper {
         newEvaluate.setRoom(room);
         newEvaluate.setCreatedBy(user);
         return newEvaluate;
+    }
+
+    public EvaluateResponse toEvaluateResponse(Evaluate evaluate) {
+        EvaluateResponse evaluateResponse = modelMapper.map(evaluate, EvaluateResponse.class);
+        evaluateResponse.setReviewer(evaluate.getCreatedBy().getFirstName() +  " " + evaluate.getCreatedBy().getLastName());
+
+        return evaluateResponse;
     }
 }

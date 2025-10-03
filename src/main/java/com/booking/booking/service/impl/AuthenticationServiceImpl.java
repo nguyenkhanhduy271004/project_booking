@@ -108,7 +108,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         List<String> authorities = new ArrayList<>();
         try {
-            // Thực hiện xác thực với username và password
             Authentication authenticate = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 

@@ -1,6 +1,7 @@
 package com.booking.booking.service.impl;
 
 import com.booking.booking.dto.request.EvaluateRequest;
+import com.booking.booking.dto.response.EvaluateResponse;
 import com.booking.booking.exception.BadRequestException;
 import com.booking.booking.exception.ResourceNotFoundException;
 import com.booking.booking.mapper.EvaluateMapper;
@@ -12,6 +13,8 @@ import com.booking.booking.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j(topic = "EVALUATE-SERVICE")
@@ -46,9 +49,13 @@ public class EvaluateServiceImpl implements EvaluateService {
 
 
     @Override
-    public Evaluate getEvaluatesByRoomId(Long roomId) {
+    public List<EvaluateResponse> getEvaluatesByRoomId(Long roomId) {
 
-        return evaluateRepository.findByRoomId(roomId);
+        List<Evaluate> evaluates = evaluateRepository.findByRoomId(roomId);
+
+        return evaluates.stream()
+                .map(evaluateMapper::toEvaluateResponse)
+                .toList();
     }
 
 

@@ -2,7 +2,10 @@ package com.booking.booking.service.interfaces;
 
 
 import com.booking.booking.dto.request.EvaluateRequest;
+import com.booking.booking.dto.response.EvaluateResponse;
 import com.booking.booking.model.Evaluate;
+
+import java.util.List;
 
 public interface EvaluateService {
 
@@ -10,7 +13,7 @@ public interface EvaluateService {
 
   void updateEvaluate(Long id, EvaluateRequest evaluateRequest);
 
-  Evaluate getEvaluatesByRoomId(Long roomId);
+  List<EvaluateResponse> getEvaluatesByRoomId(Long roomId);
 
   void deleteEvaluate(Long id);
 

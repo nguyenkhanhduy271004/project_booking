@@ -25,6 +25,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -50,49 +51,26 @@ public class BookingServiceImpl implements BookingService {
     @Value("${booking.expiry.minutes:15}")
     private int expiryMinutes;
 
+
     @Transactional
     public List<BookingResponse> createBooking(BookingRequest request) {
-        if (request.getHotelId() == null) {
-            throw new BadRequestException("HotelID is required");
-        }
-        if (request.getRoomIds() == null || request.getRoomIds().isEmpty()) {
-            throw new BadRequestException("RoomIDs is required");
-        }
         validateBookingDates(request.getCheckInDate(), request.getCheckOutDate());
 
         List<Room> rooms = validateAndFetchRooms(request.getRoomIds(), request.getHotelId());
-        validateRoomAvailability(rooms, request.getRoomIds(),
-                request.getCheckInDate(), request.getCheckOutDate());
+        validateRoomAvailability(rooms, request.getRoomIds(), request.getCheckInDate(), request.getCheckOutDate());
 
         long nights = ChronoUnit.DAYS.between(request.getCheckInDate(), request.getCheckOutDate());
         if (nights <= 0) {
             throw new BadRequestException("Checkout date must be after checkin date");
         }
 
-        BigDecimal total = rooms.stream()
-                .map(r -> BigDecimal.valueOf(r.getPricePerNight()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .multiply(BigDecimal.valueOf(nights));
+        BigDecimal total = calculateTotalPrice(rooms, nights);
 
-        BigDecimal discount = BigDecimal.ZERO;
         Voucher voucher = null;
-
+        BigDecimal discount = BigDecimal.ZERO;
         if (request.getVoucherId() != null) {
-            voucher = voucherRepository.findById(request.getVoucherId())
-                    .orElseThrow(() -> new BadRequestException("Voucher not found"));
-
-            validateVoucherCollect(voucher, request.getHotelId());
-
-            if (voucher.getPriceCondition() != null && total.compareTo(voucher.getPriceCondition()) < 0) {
-                throw new BadRequestException("Voucher not eligible (order total below condition)");
-            }
-
-            if (voucher.getQuantity() == null || voucher.getQuantity() <= 0) {
-                throw new BadRequestException("Voucher out of stock");
-            }
-
-            BigDecimal percent = BigDecimal.valueOf(voucher.getPercentDiscount()); // ví dụ 10, 15 ...
-            discount = total.multiply(percent).divide(BigDecimal.valueOf(100));
+            voucher = getValidVoucher(request.getVoucherId(), request.getHotelId(), total);
+            discount = calculateDiscount(total, voucher);
         }
 
         BigDecimal finalTotal = total.subtract(discount);
@@ -100,7 +78,8 @@ public class BookingServiceImpl implements BookingService {
         User currentUser = userContext.getCurrentUser();
         User guest = getBookingGuest(currentUser, request.getGuestId());
 
-        String bookingCode = "BK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        String bookingCode = generateBookingCode(rooms.get(0).getHotel().getName());
 
         Booking booking = Booking.builder()
                 .bookingCode(bookingCode)
@@ -117,27 +96,76 @@ public class BookingServiceImpl implements BookingService {
                 .build();
 
         Booking saved = bookingRepository.save(booking);
-        BookingResponse response = bookingMapper.toBookingResponse(saved);
 
         if (voucher != null) {
             voucher.setQuantity(voucher.getQuantity() - 1);
             voucherRepository.save(voucher);
         }
 
-        int setAvalableForRoom = roomRepository.markRoomsUnavailableByIds(request.getRoomIds());
-
-        if (setAvalableForRoom != request.getRoomIds().size()) {
+        int updated = roomRepository.markRoomsUnavailableByIds(request.getRoomIds());
+        if (updated != request.getRoomIds().size()) {
             throw new BadRequestException("Set unavailable rooms is failed");
         }
 
-        BookingNotificationDTO dto = new BookingNotificationDTO(saved);
-        Long hotelId = saved.getHotel().getId();
+        sendBookingNotification(saved, currentUser);
+
+        return List.of(bookingMapper.toBookingResponse(saved));
+    }
+
+    private static String getInitials(String name) {
+        if (name == null || name.isBlank()) return "XX";
+        StringBuilder sb = new StringBuilder();
+        for (String word : name.trim().split("\\s+")) {
+            sb.append(Character.toUpperCase(word.charAt(0)));
+        }
+        return sb.toString();
+    }
+
+
+    private String generateBookingCode(String hotelName) {
+        String initials = getInitials(hotelName);
+        String randomPart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return "BK-" + initials + "-" + randomPart;
+    }
+
+
+    private BigDecimal calculateTotalPrice(List<Room> rooms, long nights) {
+        return BigDecimal.valueOf(
+                rooms.stream().mapToDouble(Room::getPricePerNight).sum()
+        ).multiply(BigDecimal.valueOf(nights));
+    }
+
+    private Voucher getValidVoucher(Long voucherId, Long hotelId, BigDecimal total) {
+        Voucher voucher = voucherRepository.findById(voucherId)
+                .orElseThrow(() -> new BadRequestException("Voucher not found"));
+
+        validateVoucherCollect(voucher, hotelId);
+
+        if (voucher.getPriceCondition() != null && total.compareTo(voucher.getPriceCondition()) < 0) {
+            throw new BadRequestException("Voucher not eligible (order total below condition)");
+        }
+
+        if (voucher.getQuantity() == null || voucher.getQuantity() <= 0) {
+            throw new BadRequestException("Voucher out of stock");
+        }
+
+        return voucher;
+    }
+
+    private BigDecimal calculateDiscount(BigDecimal total, Voucher voucher) {
+        return total.multiply(BigDecimal.valueOf(voucher.getPercentDiscount()))
+                .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);
+    }
+
+
+    private void sendBookingNotification(Booking booking, User currentUser) {
+        BookingNotificationDTO dto = new BookingNotificationDTO(booking);
+        Long hotelId = booking.getHotel().getId();
+
         if (currentUser.getType() == UserType.ADMIN || currentUser.getType() == UserType.SYSTEM_ADMIN) {
             messagingTemplate.convertAndSend("/topic/booking/global", dto);
         }
         messagingTemplate.convertAndSend("/topic/booking/hotel/" + hotelId, dto);
-
-        return List.of(response);
     }
 
 
@@ -240,14 +268,8 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("Guest ID must not be null for non-GUEST users");
         }
 
-        User guest = userRepository.findById(guestId)
+        return userRepository.findById(guestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Guest not found with id: " + guestId));
-
-//    if (guest.getType() != UserType.GUEST) {
-//      throw new BadRequestException("Specified user is not a guest. User type: " + guest.getType());
-//    }
-
-        return guest;
     }
 
 
@@ -292,17 +314,13 @@ public class BookingServiceImpl implements BookingService {
     }
 
 
+    @Transactional
     public BookingResponse updateBooking(Long id, BookingRequest request) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
 
         Hotel hotel = hotelRepository.findById(request.getHotelId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Hotel not found with id: " + request.getHotelId()));
-
-        if (request.getRoomIds() == null || request.getRoomIds().isEmpty()) {
-            throw new BadRequestException("Room IDs must not be empty");
-        }
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id: " + request.getHotelId()));
 
         List<Room> rooms = roomRepository.findAllById(request.getRoomIds());
         if (rooms.size() != request.getRoomIds().size()) {
@@ -310,10 +328,10 @@ public class BookingServiceImpl implements BookingService {
         }
 
         for (Room room : rooms) {
-            if (!hotel.getRooms().contains(room)) {
-                throw new ResourceNotFoundException(String.format(
-                        "Hotel with id %s does not contain room with id %s",
-                        request.getHotelId(), room.getId()));
+            if (!room.getHotel().getId().equals(hotel.getId())) {
+                throw new BadRequestException(String.format(
+                        "Room with id %s does not belong to hotel with id %s",
+                        room.getId(), hotel.getId()));
             }
         }
 
@@ -322,6 +340,7 @@ public class BookingServiceImpl implements BookingService {
         Booking updated = bookingRepository.save(booking);
         return bookingMapper.toBookingResponse(updated);
     }
+
 
     public void deleteBooking(Long id) {
         Booking booking = bookingRepository.findByIdAndIsDeletedFalse(id)
@@ -358,8 +377,8 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public void restoreBookings(List<Long> ids) {
         List<Booking> existing = bookingRepository.findAllByIdInAndIsDeletedTrue(ids);
-        java.util.Set<Long> valid = existing.stream().map(Booking::getId)
-                .collect(java.util.stream.Collectors.toSet());
+        Set<Long> valid = existing.stream().map(Booking::getId)
+                .collect(Collectors.toSet());
         List<Long> invalid = ids.stream().filter(id -> !valid.contains(id)).toList();
         if (!invalid.isEmpty()) {
             throw new InvalidBookingIdsException("Some booking IDs are invalid or not deleted", invalid);
@@ -393,8 +412,8 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public void deleteBookingsPermanently(List<Long> ids) {
         List<Booking> list = bookingRepository.findAllById(ids);
-        java.util.Set<Long> valid = list.stream().map(Booking::getId)
-                .collect(java.util.stream.Collectors.toSet());
+        Set<Long> valid = list.stream().map(Booking::getId)
+                .collect(Collectors.toSet());
         List<Long> invalid = ids.stream().filter(id -> !valid.contains(id)).toList();
         if (!invalid.isEmpty()) {
             throw new InvalidBookingIdsException("Some booking IDs are invalid", invalid);
@@ -411,7 +430,6 @@ public class BookingServiceImpl implements BookingService {
         List<BookingResponse> result = new ArrayList<>();
         for (Booking booking : bookingList) {
             BookingResponse response = bookingMapper.toBookingResponse(booking);
-
             result.add(response);
         }
 

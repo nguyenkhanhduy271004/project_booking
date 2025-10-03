@@ -5,6 +5,7 @@ import com.booking.booking.dto.request.VoucherCreateRequest;
 import com.booking.booking.dto.request.VoucherUpdateRequest;
 import com.booking.booking.exception.BadRequestException;
 import com.booking.booking.exception.ResourceNotFoundException;
+import com.booking.booking.mapper.VoucherMapper;
 import com.booking.booking.model.Hotel;
 import com.booking.booking.model.User;
 import com.booking.booking.model.Voucher;
@@ -18,9 +19,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.util.Date;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "VOUCHER-SERVICE")
@@ -28,6 +26,7 @@ public class VoucherServiceImpl implements VoucherService {
 
     private final VoucherRepository voucherRepository;
     private final HotelRepository hotelRepository;
+    private final VoucherMapper voucherMapper;
     private final UserContext userContext;
 
 
@@ -51,17 +50,8 @@ public class VoucherServiceImpl implements VoucherService {
             throw new BadRequestException("Voucher code already exists");
         }
 
-        Voucher voucher = Voucher.builder()
-                .hotel(hotel)
-                .status(request.getStatus())
-                .quantity(request.getQuantity())
-                .voucherCode(request.getVoucherCode())
-                .voucherName(request.getVoucherName())
-                .expiredDate(request.getExpiredDate())
-                .percentDiscount(request.getPercentDiscount())
-                .priceCondition(request.getPriceCondition())
-                .build();
-        voucher.setCreatedAt(Date.from(Instant.now()));
+        Voucher voucher = voucherMapper.toVoucher(request);
+        voucher.setHotel(hotel);
         voucherRepository.save(voucher);
     }
 
@@ -86,14 +76,7 @@ public class VoucherServiceImpl implements VoucherService {
             throw new BadRequestException("Voucher code already exists");
         }
 
-        existVoucher.setVoucherCode(request.getVoucherCode());
-        existVoucher.setVoucherName(request.getVoucherName());
-        existVoucher.setQuantity(request.getQuantity());
-        existVoucher.setPercentDiscount(request.getPercentDiscount());
-        existVoucher.setPriceCondition(request.getPriceCondition());
-        existVoucher.setExpiredDate(request.getExpiredDate());
-        existVoucher.setStatus(request.getStatus());
-        existVoucher.setUpdatedAt(Date.from(Instant.now()));
+        voucherMapper.updateVoucher(existVoucher, request);
 
         voucherRepository.save(existVoucher);
     }

@@ -43,18 +43,19 @@ import static com.booking.booking.common.AppConst.SEARCH_SPEC_OPERATOR;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
+
     private final UserMapper userMapper;
+    private final UserContext userContext;
     private final EmailService emailService;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisTemplate<String, String> redisTemplate;
     private final ForgotPasswordRepository forgotPasswordRepository;
-    private final UserContext userContext;
 
     @Override
     public UserPageResponse findAll(String keyword, String sort, int page, int size) {
-        Sort.Order order = buildSortOrder(sort, "id");
+        Sort.Order order = buildSortOrder(sort);
         Pageable pageable = PageRequest.of(pageIndex(page), size, Sort.by(order));
         Page<User> entityPage = StringUtils.hasLength(keyword)
                 ? userRepository.searchByKeyword("%" + keyword.toLowerCase() + "%", pageable)
@@ -64,7 +65,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserPageResponse findAllUsersIsDeleted(String keyword, String sort, int page, int size) {
-        Sort.Order order = buildSortOrder(sort, "id");
+        Sort.Order order = buildSortOrder(sort);
         Pageable pageable = PageRequest.of(pageIndex(page), size, Sort.by(order));
         Page<User> entityPage = StringUtils.hasLength(keyword)
                 ? userRepository.searchByKeywordAndIsDeletedTrue("%" + keyword.toLowerCase() + "%",
@@ -395,27 +396,9 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
-    private PageResponse<UserPageResponse> mapToPageResponse(Pageable pageable, Page<User> users) {
-        List<UserResponse> userResponses = users.getContent().stream()
-                .map(userMapper::toUserResponse)
-                .collect(Collectors.toList());
-        UserPageResponse userPageResponse = new UserPageResponse();
-        userPageResponse.setPageNumber(pageable.getPageNumber());
-        userPageResponse.setPageSize(pageable.getPageSize());
-        userPageResponse.setTotalElements(users.getTotalElements());
-        userPageResponse.setTotalPages(users.getTotalPages());
-        userPageResponse.setUsers(userResponses);
-        return PageResponse.<UserPageResponse>builder()
-                .pageNo(pageable.getPageNumber())
-                .pageSize(pageable.getPageSize())
-                .totalPage(users.getTotalPages())
-                .totalElements(users.getTotalElements())
-                .items(userPageResponse)
-                .build();
-    }
 
-    private Sort.Order buildSortOrder(String sort, String defaultField) {
-        Sort.Order order = new Sort.Order(Sort.Direction.ASC, defaultField);
+    private Sort.Order buildSortOrder(String sort) {
+        Sort.Order order = new Sort.Order(Sort.Direction.ASC, "id");
         if (StringUtils.hasLength(sort)) {
             Pattern pattern = Pattern.compile("(\\w+?)(:)(.*)");
             Matcher matcher = pattern.matcher(sort);

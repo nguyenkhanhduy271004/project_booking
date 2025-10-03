@@ -18,8 +18,6 @@ import com.booking.booking.repository.UserRepository;
 import com.booking.booking.repository.VoucherRepository;
 import com.booking.booking.service.CloudinaryService;
 import com.booking.booking.service.interfaces.HotelService;
-import com.booking.booking.util.AuthorizationUtils;
-import com.booking.booking.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,7 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,21 +39,14 @@ import java.util.stream.Collectors;
 public class HotelServiceImpl implements HotelService {
 
     private final UserMapper userMapper;
-    private final UserContext userContext;
     private final HotelMapper hotelMapper;
     private final RoomRepository roomRepository;
     private final HotelRepository hotelRepository;
     private final CloudinaryService cloudinaryService;
-    private final AuthorizationUtils authorizationUtils;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final UserRepository userRepository;
     private final VoucherRepository voucherRepository;
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Hotel> getAllHotels(Pageable pageable) {
-        return hotelRepository.findAllByIsDeletedFalse(pageable);
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -156,40 +150,6 @@ public class HotelServiceImpl implements HotelService {
         }
     }
 
-    @Override
-    public void deleteHotel(Long id) {
-        Hotel hotel = hotelRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found"));
-
-        String oldImageUrl = hotel.getImageUrl();
-        if (oldImageUrl != null && !oldImageUrl.isBlank()) {
-            try {
-                String publicId = extractPublicIdFromUrl(oldImageUrl);
-                if (!publicId.isBlank()) {
-                    cloudinaryService.delete(publicId);
-                } else {
-                    log.warn("Image publicId extraction failed for URL: {}", oldImageUrl);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to delete image from Cloudinary: {}", e.getMessage());
-            }
-        }
-
-        hotel.setDeleted(true);
-        hotel.setDeletedAt(new Date());
-
-        User currentUser = userContext.getCurrentUser();
-        if (currentUser != null) {
-            hotel.setUpdatedBy(currentUser);
-        }
-
-        hotelRepository.save(hotel);
-    }
-
-    @Override
-    public void deleteHotels(List<Long> ids) throws ResourceNotFoundException {
-        hotelRepository.softDeleteByIds(ids, new Date());
-    }
 
     @Override
     public void softDeleteHotel(Long id) {
@@ -209,7 +169,7 @@ public class HotelServiceImpl implements HotelService {
         if (!invalid.isEmpty()) {
             throw new InvalidHotelIdsException("Some hotel IDs are invalid or already deleted", invalid);
         }
-        hotelRepository.softDeleteByIds(ids, new java.util.Date());
+        hotelRepository.softDeleteByIds(ids, new Date());
     }
 
     @Override
@@ -217,7 +177,6 @@ public class HotelServiceImpl implements HotelService {
         Hotel hotel = hotelRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found"));
         hotel.setDeleted(false);
-        hotel.setDeletedAt(null);
         hotelRepository.save(hotel);
     }
 
@@ -294,42 +253,6 @@ public class HotelServiceImpl implements HotelService {
         }
     }
 
-    @Override
-    public Page<Hotel> getAllHotelsWithAuthorization(Pageable pageable, boolean deleted) {
-        User currentUser = authorizationUtils.getCurrentUser();
-
-        if (authorizationUtils.canAccessAllData()) {
-            return getAllHotels(pageable, deleted);
-        } else if (authorizationUtils.isManager()) {
-            return deleted
-                    ? hotelRepository.findByManagerAndIsDeletedTrue(currentUser, pageable)
-                    : hotelRepository.findByManagerAndIsDeletedFalse(currentUser, pageable);
-        } else if (authorizationUtils.isStaff()) {
-            return deleted
-                    ? hotelRepository.findByManagerAndIsDeletedTrue(currentUser, pageable)
-                    : hotelRepository.findByManagerAndIsDeletedFalse(currentUser, pageable);
-        } else {
-            return Page.empty(pageable);
-        }
-    }
-
-    @Override
-    public Optional<Hotel> getHotelByIdWithAuthorization(Long id) {
-        // User currentUser = authorizationUtils.getCurrentUser();
-        //
-        // if (authorizationUtils.canAccessAllData()) {
-        // // System Admin and Admin can see all hotels
-        // return getHotelById(id);
-        // } else if (authorizationUtils.isManager() || authorizationUtils.isStaff()) {
-        // // Manager and Staff can only see hotels they manage/work at
-        // return hotelRepository.findByIdAndManagedByUserAndIsDeletedFalse(id,
-        // currentUser);
-        // } else {
-        // // Guest or other roles - return empty
-        // return Optional.empty();
-        // }
-        return null;
-    }
 
     @Override
     public List<UserResponse> getListManagersForCreateOrUpdateHotel() {
