@@ -1,5 +1,6 @@
 package com.booking.booking.service.impl;
 
+import com.booking.booking.common.UserType;
 import com.booking.booking.dto.request.EvaluateRequest;
 import com.booking.booking.dto.response.EvaluateResponse;
 import com.booking.booking.exception.BadRequestException;
@@ -12,6 +13,8 @@ import com.booking.booking.service.interfaces.EvaluateService;
 import com.booking.booking.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -56,6 +59,24 @@ public class EvaluateServiceImpl implements EvaluateService {
         return evaluates.stream()
                 .map(evaluateMapper::toEvaluateResponse)
                 .toList();
+    }
+
+    @Override
+    public Page<EvaluateResponse> getAllEvaluates(Pageable pageable) {
+
+        User user = userContext.getCurrentUser();
+
+        Page<Evaluate> responses;
+
+        if (user.getType().equals(UserType.ADMIN)) {
+            responses = evaluateRepository.findAll(pageable);
+        } else if (user.getType().equals(UserType.MANAGER) || user.getType().equals(UserType.STAFF)){
+            responses = evaluateRepository.findEvaluatesByHotelId(user.getHotel().getId(), pageable);
+        } else {
+            throw new BadRequestException("User is not admin, manager or staff");
+        }
+
+        return responses.map(evaluateMapper::toEvaluateResponse);
     }
 
 

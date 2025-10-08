@@ -29,6 +29,7 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
     private String province;
     private double starRating;
     private String addressDetail;
+    private String hotline;
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -60,4 +61,8 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
     @JoinColumn(name = "managed_by")
     @JsonIgnore
     private User manager;
+
+    @OneToMany(mappedBy = "hotel")
+    @JsonIgnore
+    private List<Evaluate> evaluates = new ArrayList<>();
 }

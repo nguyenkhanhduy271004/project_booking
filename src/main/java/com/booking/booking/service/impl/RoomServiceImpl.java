@@ -48,6 +48,7 @@ public class RoomServiceImpl implements RoomService {
     private final CloudinaryService cloudinaryService;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
+
     @Override
     public Page<RoomResponse> getAllRoomsWithHotelName(Pageable pageable, boolean deleted) {
         User user = userContext.getCurrentUser();
@@ -341,26 +342,23 @@ public class RoomServiceImpl implements RoomService {
         roomRepository.saveAll(rooms);
     }
 
-    @Override
-    public void holdRooms(List<Long> ids) {
-        List<Room> rooms = roomRepository.findAllById(ids);
-
-        if (rooms.size() != ids.size()) {
-            throw new ResourceNotFoundException("One or more room IDs not found");
-        }
-
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
+    @Transactional
+    public void holdRooms(List<Long> roomIds) {
         User user = userContext.getCurrentUser();
+        List<Room> rooms = roomRepository.lockRoomsForUpdate(roomIds);
 
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found");
-        }
+        LocalDateTime now = LocalDateTime.now();
 
-        rooms.forEach(room -> {
-            room.setAvailable(false);
+        for (Room room : rooms) {
+            if (room.getHeldByUserId() != null &&
+                    room.getHoldUntil() != null &&
+                    room.getHoldUntil().isAfter(now)) {
+                throw new BadRequestException("Phòng " + room.getId() + " đang bị người khác giữ!");
+            }
+
             room.setHeldByUserId(user.getId());
-            room.setHoldExpiresAt(expiresAt);
-        });
+            room.setHoldUntil(now.plusMinutes(10));
+        }
 
         roomRepository.saveAll(rooms);
     }

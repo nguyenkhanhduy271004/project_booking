@@ -2,6 +2,7 @@ package com.booking.booking.service.interfaces;
 
 import com.booking.booking.dto.request.BookingRequest;
 import com.booking.booking.dto.response.BookingResponse;
+import com.booking.booking.dto.response.RoomBookedDatesResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -10,13 +11,15 @@ import java.util.List;
 
 public interface BookingService {
 
-    java.util.List<BookingResponse> createBooking(BookingRequest request);
+    List<BookingResponse> createBooking(BookingRequest request);
 
     Page<BookingResponse> getAllBookings(Pageable pageable);
 
     Page<BookingResponse> getAllBookings(Pageable pageable, boolean deleted);
 
     BookingResponse getBookingById(Long id);
+
+    BookingResponse getBookingByBookingCode(String bookingCode);
 
     BookingResponse updateBooking(Long id, BookingRequest request);
 
@@ -43,4 +46,8 @@ public interface BookingService {
     Page<BookingResponse> getHistoryBookingByRoomId(Long roomId, LocalDate from, LocalDate to, int page, int size);
 
     void updateStatusBooking(Long id, String Status);
+
+    RoomBookedDatesResponse getBookedDates(Long roomId);
+
+
 }

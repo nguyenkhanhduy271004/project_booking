@@ -60,7 +60,9 @@ public class PaymentService {
         bookingRepository.save(booking);
 
         BigDecimal price = booking.getTotalPrice();
-        String orderId = booking.getBookingCode() + "-" + UUID.randomUUID().toString().substring(0, 6);
+        String safeBookingCode = booking.getBookingCode()
+                .replaceAll("[^a-zA-Z0-9_.:-]", "");
+        String orderId = safeBookingCode + "-" + UUID.randomUUID().toString().substring(0, 6);
         String requestId = UUID.randomUUID().toString();
         String orderInfo = "Thanh toán hóa đơn: " + orderId;
         String extraData = Base64.getEncoder().encodeToString("Không có khuyến mãi".getBytes(StandardCharsets.UTF_8));

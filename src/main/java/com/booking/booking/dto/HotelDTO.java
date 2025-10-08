@@ -12,6 +12,8 @@ public class HotelDTO {
 
     private Long managerId;
 
+    private String hotline;
+
     @NotBlank(message = "Hotel name is required")
     @Size(max = 100, message = "Hotel name must be at most 100 characters")
     private String name;
@@ -19,6 +21,10 @@ public class HotelDTO {
     @NotBlank(message = "District is required")
     @Size(max = 50, message = "District must be at most 50 characters")
     private String district;
+
+    @NotBlank(message = "Province is required")
+    @Size(max = 50, message = "Province must be at most 50 characters")
+    private String province;
 
     @NotBlank(message = "Address detail is required")
     @Size(max = 255, message = "Address detail must be at most 255 characters")

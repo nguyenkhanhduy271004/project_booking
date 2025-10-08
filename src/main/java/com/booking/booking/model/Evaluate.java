@@ -27,4 +27,8 @@ public class Evaluate extends AbstractEntity<Long> implements Serializable {
     @JsonBackReference
     private Room room;
 
+    @ManyToOne
+    @JoinColumn(name = "hotel_id")
+    @JsonBackReference
+    private Hotel hotel;
 }

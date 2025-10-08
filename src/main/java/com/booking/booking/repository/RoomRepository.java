@@ -3,14 +3,11 @@ package com.booking.booking.repository;
 import com.booking.booking.common.TypeRoom;
 import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Room;
-import com.booking.booking.model.User;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
@@ -27,8 +24,6 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
     int markRoomsUnavailableByIds(List<Long> ids);
 
     List<Room> findByHotelIdAndIsDeletedFalse(Long hotelId);
-
-    List<Room> findByHotelId(Long hotelId);
 
     long countByHotelId(Long hotelId);
 
@@ -54,21 +49,6 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
 
     Page<Room> findAllByIsDeletedFalseAndHotel(Pageable pageable, Hotel hotel);
 
-
-    @Query("SELECT r FROM Room r WHERE r.hotel.manager = :managedByUser AND r.isDeleted = false")
-    Page<Room> findAllByHotelManagedByUserAndIsDeletedFalse(
-            @Param("managedByUser") User managedByUser,
-            Pageable pageable);
-
-    @Query("SELECT r FROM Room r WHERE r.hotel.manager = :managedByUser AND r.isDeleted = true")
-    Page<Room> findAllByHotelManagedByUserAndIsDeletedTrue(
-            @Param("managedByUser") User managedByUser,
-            Pageable pageable);
-
-    @Query("SELECT r FROM Room r WHERE r.hotel.manager = :managedByUser AND r.id = :id AND r.isDeleted = false")
-    Optional<Room> findByIdAndHotelManagedByUserAndIsDeletedFalse(
-            @Param("id") Long id,
-            @Param("managedByUser") User managedByUser);
 
     @Query("""
                 SELECT r FROM Room r 
@@ -100,5 +80,10 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
     Long countByIsDeletedFalse();
 
     Long countByTypeRoomAndIsDeletedFalse(TypeRoom typeRoom);
+
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM Room r WHERE r.id IN :roomIds")
+    List<Room> lockRoomsForUpdate(@Param("roomIds") List<Long> roomIds);
 
 }

@@ -25,6 +25,8 @@ public class Room extends AbstractEntity<Long> implements Serializable {
     private boolean available;
     private double pricePerNight;
     private LocalDateTime holdExpiresAt;
+    private LocalDateTime holdUntil;
+
 
     @Column(name = "held_by_user_id")
     private Long heldByUserId;

@@ -36,8 +36,16 @@ public class EvaluateMapper {
 
     public EvaluateResponse toEvaluateResponse(Evaluate evaluate) {
         EvaluateResponse evaluateResponse = modelMapper.map(evaluate, EvaluateResponse.class);
-        evaluateResponse.setReviewer(evaluate.getCreatedBy().getFirstName() +  " " + evaluate.getCreatedBy().getLastName());
+
+        if (evaluate.getCreatedBy() != null) {
+            String firstName = evaluate.getCreatedBy().getFirstName() != null ? evaluate.getCreatedBy().getFirstName() : "";
+            String lastName = evaluate.getCreatedBy().getLastName() != null ? evaluate.getCreatedBy().getLastName() : "";
+            evaluateResponse.setReviewer((firstName + " " + lastName).trim());
+        } else {
+            evaluateResponse.setReviewer("Unknown User");
+        }
 
         return evaluateResponse;
     }
+
 }

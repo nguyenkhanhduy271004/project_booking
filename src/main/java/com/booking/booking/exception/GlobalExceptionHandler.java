@@ -33,6 +33,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidUserIdsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseFailure handleInvalidUserIdsException(InvalidUserIdsException ex) {
 
         log.warn("User ids exception: ", ex);
@@ -40,6 +41,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidBookingIdsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseFailure handleInvalidBookingIdsException(InvalidBookingIdsException ex) {
 
         log.warn("Booking ids exception: ", ex);
@@ -47,6 +49,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidHotelIdsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseFailure handleInvalidHotelIdsException(InvalidHotelIdsException ex) {
 
         log.warn("Hotel ids exception: ", ex);
@@ -54,6 +57,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidRoomIdsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseFailure handleInvalidRoomIdsException(InvalidRoomIdsException ex) {
         log.warn("Invalid Room Ids", ex);
         return new ResponseFailure(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -122,6 +126,13 @@ public class GlobalExceptionHandler {
 
         return new ResponseFailure(HttpStatus.BAD_REQUEST, "Invalid input data", errors);
     }
+
+    @ExceptionHandler(JwtAuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ResponseFailure handleJwtAuthenticationException(JwtAuthenticationException ex) {
+        return new ResponseFailure(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
 
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)

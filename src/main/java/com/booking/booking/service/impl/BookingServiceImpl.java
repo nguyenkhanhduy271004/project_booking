@@ -6,6 +6,7 @@ import com.booking.booking.common.VoucherStatus;
 import com.booking.booking.dto.BookingNotificationDTO;
 import com.booking.booking.dto.request.BookingRequest;
 import com.booking.booking.dto.response.BookingResponse;
+import com.booking.booking.dto.response.RoomBookedDatesResponse;
 import com.booking.booking.exception.*;
 import com.booking.booking.mapper.BookingMapper;
 import com.booking.booking.model.*;
@@ -102,10 +103,10 @@ public class BookingServiceImpl implements BookingService {
             voucherRepository.save(voucher);
         }
 
-        int updated = roomRepository.markRoomsUnavailableByIds(request.getRoomIds());
-        if (updated != request.getRoomIds().size()) {
-            throw new BadRequestException("Set unavailable rooms is failed");
-        }
+//        int updated = roomRepository.markRoomsUnavailableByIds(request.getRoomIds());
+//        if (updated != request.getRoomIds().size()) {
+//            throw new BadRequestException("Set unavailable rooms is failed");
+//        }
 
         sendBookingNotification(saved, currentUser);
 
@@ -231,33 +232,37 @@ public class BookingServiceImpl implements BookingService {
     }
 
 
-    private void validateRoomAvailability(List<Room> rooms, List<Long> roomIds, LocalDate checkIn,
-                                          LocalDate checkOut) {
+    private void validateRoomAvailability(List<Room> rooms, List<Long> roomIds,
+                                          LocalDate checkIn, LocalDate checkOut) {
 
         User user = userContext.getCurrentUser();
-
         if (user == null) {
             throw new ResourceNotFoundException("User not found");
         }
 
         for (Room room : rooms) {
-            if (!room.isAvailable() && !room.getHeldByUserId().equals(user.getId())) {
-                throw new BadRequestException("Room is held by another user.");
+            if (!room.isAvailable()) {
+                if (room.getHeldByUserId() != null && !room.getHeldByUserId().equals(user.getId())) {
+                    throw new BadRequestException("Phòng " + room.getId() + " đang bị giữ bởi người dùng khác.");
+                }
             }
         }
 
-        List<Booking> conflicting = bookingRepository.findConflictingBookings(roomIds, checkIn,
-                checkOut);
-        if (!conflicting.isEmpty()) {
-            List<Long> conflictRoomIds = conflicting.stream()
+        List<Booking> conflictingBookings =
+                bookingRepository.findConflictingBookings(roomIds, checkIn, checkOut);
+
+        if (!conflictingBookings.isEmpty()) {
+            List<Long> conflictRoomIds = conflictingBookings.stream()
                     .flatMap(b -> b.getRooms().stream())
                     .map(Room::getId)
                     .distinct()
                     .toList();
+
             throw new BadRequestException(
-                    "Some rooms are not available for the selected dates: " + conflictRoomIds);
+                    "Các phòng sau đã được đặt trong khoảng thời gian này: " + conflictRoomIds);
         }
     }
+
 
     private User getBookingGuest(User currentUser, Long guestId) {
         if (currentUser.getType() == UserType.GUEST) {
@@ -309,6 +314,13 @@ public class BookingServiceImpl implements BookingService {
                 throw new ForBiddenException("You are not allowed to access this booking with id: " + id);
             }
         }
+
+        return bookingMapper.toBookingResponse(booking);
+    }
+
+    @Override
+    public BookingResponse getBookingByBookingCode(String bookingCode) {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode).orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingCode));
 
         return bookingMapper.toBookingResponse(booking);
     }
@@ -488,5 +500,23 @@ public class BookingServiceImpl implements BookingService {
             bookingRepository.saveAll(expiredBookings);
             log.info("Successfully expired {} bookings", expiredBookings.size());
         }
+    }
+
+    public RoomBookedDatesResponse getBookedDates(Long roomId) {
+        List<Booking> bookings = bookingRepository.findBookingsByRoomId(roomId);
+
+        Set<LocalDate> bookedDates = new HashSet<>();
+
+        for (Booking booking : bookings) {
+            LocalDate current = booking.getCheckInDate();
+            LocalDate end = booking.getCheckOutDate().minusDays(1);
+
+            while (!current.isAfter(end)) {
+                bookedDates.add(current);
+                current = current.plusDays(1);
+            }
+        }
+
+        return new RoomBookedDatesResponse(roomId, bookedDates);
     }
 }

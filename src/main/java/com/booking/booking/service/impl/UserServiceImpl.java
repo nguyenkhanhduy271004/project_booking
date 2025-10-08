@@ -167,6 +167,12 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByUsername(req.getUsername()).isPresent()) {
             throw new DuplicateResourceException("Username already exists");
         }
+
+        if (userRepository.findByEmail(req.getEmail()).isPresent()) {
+            throw new DuplicateResourceException("Email already used by another user");
+        }
+
+
         User user = userRepository.save(userMapper.toUserEntity(req));
         try {
             emailService.sendVerificationEmail(req.getEmail(), req.getUsername());

@@ -27,7 +27,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long>,
 
     Page<Booking> findAllByIsDeletedFalseAndHotel(Pageable pageable, Hotel hotel);
 
-
     Optional<Booking> findByIdAndIsDeletedFalse(Long id);
 
     Page<Booking> findAllByIsDeletedTrue(Pageable pageable);
@@ -88,4 +87,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long>,
     @Query("SELECT COALESCE(AVG(b.totalPrice), 0) FROM Booking b WHERE b.status IN (com.booking.booking.common.BookingStatus.COMPLETED, com.booking.booking.common.BookingStatus.CONFIRMED)")
     Double findAverageOrderValue();
 
+    @Query("SELECT b FROM Booking b JOIN b.rooms r " +
+            "WHERE r.id = :roomId " +
+            "AND b.status NOT IN ('CANCELLED', 'FAILED')")
+    List<Booking> findBookingsByRoomId(@Param("roomId") Long roomId);
 }

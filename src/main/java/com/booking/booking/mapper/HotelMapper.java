@@ -71,6 +71,8 @@ public class HotelMapper {
         hotel.setStarRating(hotelDTO.getStarRating());
         hotel.setServices(hotelDTO.getServices());
         hotel.setUpdatedAt(Date.valueOf(LocalDate.now()));
+        hotel.setProvince(hotelDTO.getProvince());
+        hotel.setHotline(hotelDTO.getHotline());
 
         User currentUser = userContext.getCurrentUser();
         if (currentUser == null) {

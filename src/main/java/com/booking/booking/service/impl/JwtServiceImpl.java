@@ -3,6 +3,7 @@ package com.booking.booking.service.impl;
 import com.booking.booking.common.TokenType;
 import com.booking.booking.exception.AccessDeniedException;
 import com.booking.booking.exception.InvalidDataException;
+import com.booking.booking.exception.JwtAuthenticationException;
 import com.booking.booking.service.interfaces.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -116,7 +117,7 @@ public class JwtServiceImpl implements JwtService {
         try {
             return Jwts.parserBuilder().setSigningKey(getKey(type)).build().parseClaimsJws(token).getBody();
         } catch (SignatureException | ExpiredJwtException e) {
-            throw new AccessDeniedException("Access denied: " + e.getMessage());
+            throw new JwtAuthenticationException("Invalid or expired token");
         }
     }
 }

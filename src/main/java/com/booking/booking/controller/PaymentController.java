@@ -7,6 +7,9 @@ import com.booking.booking.service.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +27,9 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
+    @Autowired
+    private Environment env;
+
     @GetMapping("/momo")
     @PreAuthorize("isAuthenticated()")
     public ResponseSuccess createQRMomo(@RequestParam Long bookingId) {
@@ -33,10 +39,10 @@ public class PaymentController {
 
     @GetMapping("/vnpay")
     @PreAuthorize("isAuthenticated()")
-    public ResponseSuccess pay(@RequestParam String bookingId,
+    public ResponseSuccess pay(@RequestParam String bookingCode,
                                @RequestParam(required = false) String bankCode,
                                HttpServletRequest request) {
-        return new ResponseSuccess(HttpStatus.OK, "Success", paymentService.createVnPayPayment(bookingId, bankCode, request));
+        return new ResponseSuccess(HttpStatus.OK, "Success", paymentService.createVnPayPayment(bookingCode, bankCode, request));
     }
 
     @PostMapping("/process")
@@ -108,6 +114,9 @@ public class PaymentController {
 
     @GetMapping("/vnpay-return")
     public RedirectView vnpayReturnHandler(HttpServletRequest request) {
+
+        String baseUrl = env.getProperty("BASE_URL_FE", "http://localhost:5173");
+
         String responseCode = request.getParameter("vnp_ResponseCode");
         String txnRef = request.getParameter("vnp_TxnRef");
 
@@ -117,13 +126,13 @@ public class PaymentController {
         try {
             paymentService.handleVnpayCallback(params);
         } catch (Exception e) {
-            return new RedirectView("http://localhost:5173/payment/result?status=failure&orderId=" + txnRef);
+            return new RedirectView(baseUrl + "/payment/result?status=failure&orderId=" + txnRef);
         }
 
         if ("00".equals(responseCode)) {
-            return new RedirectView("http://localhost:5173/payment/result?status=success&orderId=" + txnRef);
+            return new RedirectView(baseUrl + "/payment/result?status=success&orderId=" + txnRef);
         } else {
-            return new RedirectView("http://localhost:5173/payment/result?status=failure&orderId=" + txnRef);
+            return new RedirectView(baseUrl + "/payment/result?status=failure&orderId=" + txnRef);
         }
     }
 
@@ -141,14 +150,16 @@ public class PaymentController {
 
     @GetMapping("/momo-return")
     public RedirectView momoReturnHandler(HttpServletRequest request) {
+        String baseUrl = env.getProperty("BASE_URL_FE", "http://localhost:5173");
+
         String orderId = request.getParameter("orderId");
         String resultCode = request.getParameter("resultCode");
 
         if ("0".equals(resultCode)) {
             paymentService.handleMomoCallback(orderId);
-            return new RedirectView("http://localhost:5173/payment/result?status=success&orderId=" + orderId);
+            return new RedirectView(baseUrl + "/payment/result?status=success&orderId=" + orderId);
         } else {
-            return new RedirectView("http://localhost:5173/payment/result?status=failure&orderId=" + orderId);
+            return new RedirectView(baseUrl + "/payment/result?status=failure&orderId=" + orderId);
         }
     }
 

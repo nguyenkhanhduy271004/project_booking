@@ -36,6 +36,11 @@ public class RoomController {
     private final RoomService roomService;
     private final BookingService bookingService;
 
+    @GetMapping("/{roomId}/booked-dates")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseSuccess getBookedDates(@PathVariable Long roomId) {
+        return new ResponseSuccess(HttpStatus.OK, "Get hotel room booked dates", bookingService.getBookedDates(roomId));
+    }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -56,6 +61,14 @@ public class RoomController {
                 .items(rooms.getContent())
                 .build();
         return new ResponseSuccess(HttpStatus.OK, "Fetched room list successfully", response);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseSuccess createRoom(@RequestPart(value = "room") @Valid RoomDTO createRoomDTO,
+                                      @RequestPart(value = "images", required = false) MultipartFile[] images) {
+
+        return new ResponseSuccess(HttpStatus.CREATED, "Room created successfully", roomService.createRoom(createRoomDTO, images));
     }
 
 

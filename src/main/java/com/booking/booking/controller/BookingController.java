@@ -4,7 +4,9 @@ import com.booking.booking.dto.request.BookingRequest;
 import com.booking.booking.dto.response.BookingResponse;
 import com.booking.booking.dto.response.PageResponse;
 import com.booking.booking.dto.response.ResponseSuccess;
+import com.booking.booking.service.BookingPdfService;
 import com.booking.booking.service.interfaces.BookingService;
+import io.jsonwebtoken.io.IOException;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +14,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 
 @RestController
@@ -24,6 +30,7 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BookingPdfService bookingPdfService;
 
     @Operation(summary = "Create Booking", description = "API to create a new booking")
     @PostMapping
@@ -173,7 +180,35 @@ public class BookingController {
     public ResponseSuccess updateStatusBooking(@PathVariable Long id, @RequestParam String status) {
         bookingService.updateStatusBooking(id, status);
 
-        return new  ResponseSuccess(HttpStatus.OK, "Booking status updated successfully");
+        return new ResponseSuccess(HttpStatus.OK, "Booking status updated successfully");
     }
+
+    @GetMapping("/code/{bookingCode}")
+    public ResponseSuccess getBookingByCode(@PathVariable String bookingCode) {
+
+        return new ResponseSuccess(HttpStatus.OK, "Get booking by booking code successfully", bookingService.getBookingByBookingCode(bookingCode));
+    }
+
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> exportBookingPdf(@PathVariable Long id) {
+        ByteArrayInputStream bis = bookingPdfService.generateBookingPdf(id);
+        byte[] pdfBytes;
+
+        try {
+            pdfBytes = bis.readAllBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể đọc PDF stream", e);
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=booking_" + id + ".pdf");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+    }
+
 
 }
