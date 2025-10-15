@@ -17,7 +17,7 @@ public class EnhancedAIChatService {
         this.ragService = ragService;
     }
 
-    @Cacheable(value = "hotelSearch", key = "#question.toLowerCase().trim()", unless = "#result == null || #result.isEmpty()")
+    // @Cacheable(value = "hotelSearch", key = "#question.toLowerCase().trim()", unless = "#result == null || #result.isEmpty()")
     public List<HotelRAGService.HotelSuggestionDTO> answerQuestion(String question) {
         long startTime = System.currentTimeMillis();
 
@@ -35,22 +35,24 @@ public class EnhancedAIChatService {
         log.info("Hoàn thành xử lý câu hỏi trong {}ms", totalTime);
 
         if (result == null || result.isEmpty()) {
+            log.warn("Không tìm thấy khách sạn phù hợp với câu hỏi: {}", normalizedQuestion);
             return fallbackMessage();
         }
+
 
         return result;
     }
 
-    @CacheEvict(value = "hotelSearch", allEntries = true)
-    public void refreshAllHotelData() {
-        log.info("Đang làm mới toàn bộ dữ liệu khách sạn...");
-        ragService.indexAllHotels();
-    }
+//    @CacheEvict(value = "hotelSearch", allEntries = true)
+//    public void refreshAllHotelData() {
+//        log.info("Đang làm mới toàn bộ dữ liệu khách sạn...");
+//        ragService.indexAllHotels();
+//    }
 
-    public void refreshHotelData(Long hotelId) {
-        log.info("Đang làm mới dữ liệu khách sạn ID: {}", hotelId);
-        ragService.updateHotelInIndex(hotelId);
-    }
+//    public void refreshHotelData(Long hotelId) {
+//        log.info("Đang làm mới dữ liệu khách sạn ID: {}", hotelId);
+//        ragService.updateHotelInIndex(hotelId);
+//    }
 
     private List<HotelRAGService.HotelSuggestionDTO> greetingMessage() {
         return List.of(

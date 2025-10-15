@@ -72,27 +72,27 @@ spring:
       enabled: false
 
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:localhost:29092}
+    bootstrap-servers: kafka:9092
 
   ai:
     openai:
-      api-key: "dummy"
-      base-url: http://localhost:11434
+      base-url: http://172.31.33.35:11434
+      api-key: "ollama"
       embedding:
         options:
-          model: nomic-embed-text
+          model: bge-m3
       chat:
         options:
-          model: mistral
+          model: llama3
 
     vectorstore:
       pgvector:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
-        dimensions: 768
+        dimensions: 1024
         index-name: hotel_rag_index
         initialize-schema: true
-        remove-existing-vector-store-table: false
+        remove-existing-vector-store-table: true
         schema-validation: false
 
   cache:
@@ -126,7 +126,7 @@ cloudinary:
   api_secret: ${CLOUDINARY_SECRET}
 
 redis:
-  host: localhost
+  host: redis
   port: 6379
 
 booking:

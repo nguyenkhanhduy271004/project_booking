@@ -1,6 +1,7 @@
 package com.booking.booking.controller;
 
 import com.booking.booking.dto.HotelDTO;
+import com.booking.booking.dto.request.HotelSearchRequest;
 import com.booking.booking.dto.response.PageResponse;
 import com.booking.booking.dto.response.ResponseSuccess;
 import com.booking.booking.mapper.HotelMapper;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,10 @@ public class HotelController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
+    @Cacheable(
+            value = "hotelCache",
+            key = "'page:' + #page + '-size:' + #size + '-sort:' + #sort + '-deleted:' + #deleted"
+    )
     public ResponseSuccess getAllHotels(
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
@@ -43,7 +49,7 @@ public class HotelController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
         Page<HotelDTO> hotelPage =
                 hotelService.getAllHotels(pageable, deleted)
-                .map(hotelMapper::toDTO);
+                        .map(hotelMapper::toDTO);
 
         PageResponse<?> response = PageResponse.builder()
                 .pageNo(pageable.getPageNumber())
@@ -55,16 +61,16 @@ public class HotelController {
         return new ResponseSuccess(HttpStatus.OK, "Fetched hotel list successfully", response);
     }
 
-    @Operation(summary = "Search hotel by keyword", description = "API retrieve user from database")
-    @GetMapping("/search")
-    public ResponseSuccess searchHotel(Pageable pageable,
-                                       @RequestParam(required = false)
-                                       String[] hotel) {
-        log.info("Search hotel");
-
-        return new ResponseSuccess(HttpStatus.OK, "Search users successfully",
-                hotelService.advanceSearchWithSpecification(pageable, hotel));
-    }
+//    @Operation(summary = "Search hotel by keyword", description = "API retrieve user from database")
+//    @GetMapping("/search")
+//    public ResponseSuccess searchHotel(Pageable pageable,
+//                                       @RequestParam(required = false)
+//                                       String[] hotel) {
+//        log.info("Search hotel");
+//
+//        return new ResponseSuccess(HttpStatus.OK, "Search users successfully",
+//                hotelService.advanceSearchWithSpecification(pageable, hotel));
+//    }
 
 
     @GetMapping("/{id}")
@@ -78,11 +84,19 @@ public class HotelController {
 
     @GetMapping("/{id}/rooms")
     @ResponseStatus(HttpStatus.OK)
+    @Cacheable(value = "roomCache", key = "'roomsWithHotelId:' + #id")
     public ResponseSuccess getHotelRooms(@PathVariable("id") Long id) {
 
         return new ResponseSuccess(HttpStatus.OK, "Get rooms by hotel id successfully",
                 hotelService.getRoomByHotelId(id));
     }
+
+    @PostMapping("/search")
+    @Cacheable(value = "searchHotelCache", key = "#request.hashCode()")
+    public ResponseSuccess searchHotel(@RequestBody @Valid HotelSearchRequest request) {
+        return new ResponseSuccess(HttpStatus.OK, "Search hotels successfully", hotelService.searchHotels(request));
+    }
+
 
     @GetMapping("/managers")
     @ResponseStatus(HttpStatus.OK)

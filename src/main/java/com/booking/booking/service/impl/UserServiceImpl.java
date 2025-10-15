@@ -260,10 +260,9 @@ public class UserServiceImpl implements UserService {
         if (username == null) {
             throw new IllegalArgumentException("Mã xác thực không hợp lệ hoặc đã hết hạn.");
         }
-        User user = userRepository.findByUsernameAndIsDeletedFalse(username);
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found with username" + username);
-        }
+        User user = userRepository.findByUsername(username).orElseThrow(() ->
+                new ResourceNotFoundException("Username not found with username: " + username));
+
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
         redisTemplate.delete(secretCode);

@@ -133,6 +133,11 @@ public class GlobalExceptionHandler {
         return new ResponseFailure(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    @ExceptionHandler(LoginFailedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ResponseFailure handleLoginFailedException(LoginFailedException ex) {
+        return new ResponseFailure(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
 
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)

@@ -10,7 +10,10 @@ import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.Image;
 import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.*;
+import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.draw.LineSeparator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +24,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.URL;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
@@ -46,14 +50,18 @@ public class BookingPdfService {
             PdfWriter writer = PdfWriter.getInstance(document, out);
             document.open();
 
-            BaseFont baseFont = BaseFont.createFont("src/main/resources/fonts/DejaVuSans.ttf",
-                    BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            InputStream fontStream = getClass().getResourceAsStream("/fonts/DejaVuSans.ttf");
+            if (fontStream == null) {
+                throw new RuntimeException("Không tìm thấy font DejaVuSans.ttf trong classpath!");
+            }
+            byte[] fontBytes = fontStream.readAllBytes();
+            BaseFont baseFont = BaseFont.createFont("DejaVuSans.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, fontBytes, null);
+
             Font titleFont = new Font(baseFont, 20, Font.BOLD, new Color(40, 40, 40));
             Font normalFont = new Font(baseFont, 12, Font.NORMAL);
             Font boldFont = new Font(baseFont, 12, Font.BOLD);
             Font smallItalicFont = new Font(baseFont, 10, Font.ITALIC);
 
-            // Header
             PdfPTable headerTable = new PdfPTable(2);
             headerTable.setWidthPercentage(100);
             headerTable.setWidths(new int[]{1, 3});
@@ -126,7 +134,6 @@ public class BookingPdfService {
 
             document.add(roomTable);
 
-            // QR Code
             String bookingUrl = FE_URL + "/bookings/" + booking.getBookingCode();
             try {
                 QRCodeWriter qrWriter = new QRCodeWriter();

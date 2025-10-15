@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
@@ -91,4 +92,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long>,
             "WHERE r.id = :roomId " +
             "AND b.status NOT IN ('CANCELLED', 'FAILED')")
     List<Booking> findBookingsByRoomId(@Param("roomId") Long roomId);
+
+    List<Booking> findByStatusAndPaymentExpiredAtBefore(BookingStatus status, Instant instant);
 }

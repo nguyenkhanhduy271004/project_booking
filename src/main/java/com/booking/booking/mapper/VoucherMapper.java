@@ -2,10 +2,7 @@ package com.booking.booking.mapper;
 
 import com.booking.booking.dto.request.VoucherCreateRequest;
 import com.booking.booking.dto.request.VoucherUpdateRequest;
-import com.booking.booking.exception.ResourceNotFoundException;
-import com.booking.booking.model.Hotel;
 import com.booking.booking.model.Voucher;
-import com.booking.booking.repository.HotelRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;

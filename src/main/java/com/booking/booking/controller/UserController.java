@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Validated
 public class UserController {
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
 
     private final UserMapper userMapper;
     private final UserService userService;
@@ -190,7 +195,7 @@ public class UserController {
         } catch (Exception e) {
             log.error("Confirm email was failed!, errorMessage={}" + e.getMessage());
         } finally {
-            response.sendRedirect("http://localhost:5172");
+            response.sendRedirect(frontendUrl);
         }
     }
 

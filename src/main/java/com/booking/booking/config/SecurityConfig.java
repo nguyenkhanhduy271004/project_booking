@@ -33,6 +33,9 @@ public class SecurityConfig {
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
 
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
     private static final String[] PUBLIC_API = {
             "/api/auth/**",
             "/api/v1/users/confirm-email",
@@ -44,6 +47,8 @@ public class SecurityConfig {
             "/api/payment/callback/**",
             "/api/ai-chat/**",
             "/api/payment/momo-return",
+            "/api/v1/users/active-account/**",
+            "/api/v1/hotels/search"
     };
 
     private static final String[] SWAGGER_API = {
@@ -75,7 +80,7 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService))
                         .successHandler((request, response, authentication) -> {
-                            response.sendRedirect("http://localhost:3000");
+                            response.sendRedirect(frontendUrl);
                         })
                 )
 

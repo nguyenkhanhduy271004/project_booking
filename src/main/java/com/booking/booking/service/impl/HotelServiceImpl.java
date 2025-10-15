@@ -2,6 +2,9 @@ package com.booking.booking.service.impl;
 
 import com.booking.booking.common.UserType;
 import com.booking.booking.dto.HotelDTO;
+import com.booking.booking.dto.HotelWithAvailableRoomsDTO;
+import com.booking.booking.dto.RoomSummaryDTO;
+import com.booking.booking.dto.request.HotelSearchRequest;
 import com.booking.booking.dto.response.PageResponse;
 import com.booking.booking.dto.response.UserResponse;
 import com.booking.booking.exception.BadRequestException;
@@ -87,6 +90,49 @@ public class HotelServiceImpl implements HotelService {
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id: " + hotelId));
 
         return roomRepository.findByHotelIdAndIsDeletedFalse(hotelId);
+    }
+
+    @Override
+    public List<HotelWithAvailableRoomsDTO> searchHotels(HotelSearchRequest request) {
+        List<Room> rooms = roomRepository.findAvailableRooms(
+                request.getKeyword(),
+                request.getNumberOfGuests(),
+                request.getCheckIn(),
+                request.getCheckOut()
+        );
+
+        Map<Long, List<Room>> grouped = rooms.stream()
+                .collect(Collectors.groupingBy(room -> room.getHotel().getId()));
+
+        return grouped.entrySet().stream()
+                .filter(entry -> entry.getValue().size() >= request.getNumberOfRooms())
+                .map(entry -> {
+                    List<Room> availableRooms = entry.getValue();
+                    Room firstRoom = availableRooms.get(0);
+                    Hotel hotel = firstRoom.getHotel();
+
+                    return HotelWithAvailableRoomsDTO.builder()
+                            .hotelId(hotel.getId())
+                            .name(hotel.getName())
+                            .address(hotel.getAddressDetail() + ", " + hotel.getDistrict() + ", " + hotel.getProvince())
+                            .imageUrl(hotel.getImageUrl())
+                            .starRating(hotel.getStarRating())
+                            .availableRooms(
+                                    availableRooms.stream().map(this::mapRoom).toList()
+                            )
+                            .build();
+                }).toList();
+
+    }
+
+    private RoomSummaryDTO mapRoom(Room room) {
+        return RoomSummaryDTO.builder()
+                .roomId(room.getId())
+                .typeRoom(room.getTypeRoom())
+                .capacity(room.getCapacity())
+                .pricePerNight(room.getPricePerNight())
+                .imageUrls(room.getListImageUrl())
+                .build();
     }
 
     @Override

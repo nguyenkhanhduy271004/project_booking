@@ -10,8 +10,8 @@ import com.booking.booking.exception.*;
 import com.booking.booking.mapper.UserMapper;
 import com.booking.booking.model.User;
 import com.booking.booking.repository.UserRepository;
-import com.booking.booking.service.interfaces.AuthenticationService;
 import com.booking.booking.service.EmailService;
+import com.booking.booking.service.interfaces.AuthenticationService;
 import com.booking.booking.service.interfaces.JwtService;
 import com.google.gson.Gson;
 import jakarta.transaction.Transactional;
@@ -62,7 +62,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             SecurityContextHolder.getContext().setAuthentication(authenticate);
         } catch (BadCredentialsException | DisabledException e) {
             log.error("errorMessage: {}", e.getMessage());
-            throw new AccessDeniedException(e.getMessage());
+            throw new LoginFailedException("Đăng nhập thất bại");
         }
 
         String accessToken = jwtService.generateAccessToken(loginRequest.getUsername(), authorities);
@@ -86,10 +86,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new PasswordNotMatchException("Passwords do not match");
         }
 
-        User user = userRepository.findByUsernameAndIsDeletedFalse(registerRequest.getUsername());
-
-        if (user != null) {
+        if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             throw new UsernameIsExistException("Username already exists");
+        }
+
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+            throw new DuplicateResourceException("Email has been used by another user");
         }
 
         User savedUser = userRepository.save(userMapper.toUserEntity(registerRequest));
@@ -101,6 +103,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         kafkaTemplate.send("verify-account-topic", message);
     }
+
 
     @Override
     public TokenResponse getAccessToken(SignInRequest request) {

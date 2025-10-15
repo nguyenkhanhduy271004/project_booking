@@ -11,7 +11,9 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,5 +66,8 @@ public class Booking extends AbstractEntity<Long> implements Serializable {
     @JoinTable(name = "tbl_booking_room", joinColumns = @JoinColumn(name = "booking_id"), inverseJoinColumns = @JoinColumn(name = "room_id"))
     @Builder.Default
     private List<Room> rooms = new ArrayList<>();
+
+    @Column(name = "payment_expired_at")
+    private Instant paymentExpiredAt;
 
 }

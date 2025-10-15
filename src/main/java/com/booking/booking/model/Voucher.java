@@ -26,7 +26,6 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Voucher extends AbstractEntity<Long> implements Serializable {
 
   @NotBlank

@@ -14,39 +14,30 @@ import java.math.BigDecimal;
 @Component
 @RequiredArgsConstructor
 public class BookingMapper {
-
     private final ModelMapper modelMapper;
 
     public BookingResponse toBookingResponse(Booking booking) {
         BookingResponse res = modelMapper.map(booking, BookingResponse.class);
-
         if (booking.getHotel() != null) {
             res.setHotelName(booking.getHotel().getName());
         }
-
         if (booking.getRooms() != null && !booking.getRooms().isEmpty()) {
-            java.util.List<BookingResponse.RoomInfo> roomInfos = booking.getRooms().stream()
-                    .map(room -> {
-                        BookingResponse.RoomInfo roomInfo = new BookingResponse.RoomInfo();
-                        roomInfo.setId(room.getId());
-                        roomInfo.setTypeRoom(room.getTypeRoom());
-                        roomInfo.setCapacity(room.getCapacity());
-                        roomInfo.setPricePerNight(room.getPricePerNight());
-                        roomInfo.setAvailable(room.isAvailable());
-                        roomInfo
-                                .setImageUrls(room.getListImageUrl() != null ? room.getListImageUrl() : new java.util.ArrayList<>());
-                        return roomInfo;
-                    })
-                    .toList();
+            java.util.List<BookingResponse.RoomInfo> roomInfos = booking.getRooms().stream().map(room -> {
+                BookingResponse.RoomInfo roomInfo = new BookingResponse.RoomInfo();
+                roomInfo.setId(room.getId());
+                roomInfo.setTypeRoom(room.getTypeRoom());
+                roomInfo.setCapacity(room.getCapacity());
+                roomInfo.setPricePerNight(room.getPricePerNight());
+                roomInfo.setAvailable(room.isAvailable());
+                roomInfo.setImageUrls(room.getListImageUrl() != null ? room.getListImageUrl() : new java.util.ArrayList<>());
+                return roomInfo;
+            }).toList();
             res.setRooms(roomInfos);
         }
-
         return res;
     }
 
-
-    public void toBooking(Booking booking, BookingRequest bookingRequest,
-                          Hotel hotel, java.util.List<Room> rooms) {
+    public void toBooking(Booking booking, BookingRequest bookingRequest, Hotel hotel, java.util.List<Room> rooms) {
         booking.setHotel(hotel);
         booking.setLegacyRoomId(rooms.isEmpty() ? null : rooms.get(0).getId());
         booking.setRooms(new java.util.ArrayList<>(rooms));
@@ -57,6 +48,4 @@ public class BookingMapper {
         booking.setNotes(bookingRequest.getNotes());
         booking.setStatus(bookingRequest.getStatus());
     }
-
-
 }

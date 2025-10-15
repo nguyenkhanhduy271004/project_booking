@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,10 +25,9 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -56,13 +56,16 @@ public class PaymentService {
     public CreateMomoResponse createQR(long bookingId) {
         Booking booking = findBookingOrThrow(bookingId);
         booking.setStatus(BookingStatus.PAYING);
+        booking.setPaymentExpiredAt(Instant.now().plus(Duration.ofMinutes(15)));
+
         bookingUtil.handleBookingWithStatus(booking, BookingStatus.PAYING);
         bookingRepository.save(booking);
 
         BigDecimal price = booking.getTotalPrice();
-        String safeBookingCode = booking.getBookingCode()
+
+        String orderId = booking.getBookingCode()
                 .replaceAll("[^a-zA-Z0-9_.:-]", "");
-        String orderId = safeBookingCode + "-" + UUID.randomUUID().toString().substring(0, 6);
+
         String requestId = UUID.randomUUID().toString();
         String orderInfo = "Thanh toán hóa đơn: " + orderId;
         String extraData = Base64.getEncoder().encodeToString("Không có khuyến mãi".getBytes(StandardCharsets.UTF_8));
@@ -70,7 +73,8 @@ public class PaymentService {
         String rawSignature = String.format(
                 "accessKey=%s&amount=%s&extraData=%s&ipnUrl=%s&orderId=%s&orderInfo=%s&partnerCode=%s&redirectUrl=%s&requestId=%s&requestType=%s",
                 accessKey, price.longValue(), extraData, ipnUrl, orderId, orderInfo, partnerCode, redirectUrl,
-                requestId, requestType);
+                requestId, requestType
+        );
 
         String signature = hmacSHA256(secretKey, rawSignature);
 
@@ -93,6 +97,7 @@ public class PaymentService {
 
         return response;
     }
+
 
     @Transactional
     public void handleMomoCallback(Map<String, String> params) {
@@ -142,6 +147,8 @@ public class PaymentService {
     public PaymentDTO.VNPayResponse createVnPayPayment(String bookingCode, String bankCode, HttpServletRequest req) {
         Booking booking = findBookingByCodeOrThrow(bookingCode);
         booking.setStatus(BookingStatus.PAYING);
+        booking.setPaymentExpiredAt(Instant.now().plus(Duration.ofMinutes(15)));
+
         bookingUtil.handleBookingWithStatus(booking, BookingStatus.PAYING);
         bookingRepository.save(booking);
 
@@ -240,4 +247,23 @@ public class PaymentService {
             throw new RuntimeException("Error while generating HMAC SHA256 signature", e);
         }
     }
+
+    @Scheduled(fixedRate = 60_000)
+    @Transactional
+    public void checkExpiredPayments() {
+        List<Booking> bookings = bookingRepository
+                .findByStatusAndPaymentExpiredAtBefore(BookingStatus.PAYING, Instant.now());
+
+        if (bookings.isEmpty()) {
+            return;
+        }
+
+        bookings.forEach(booking -> {
+            booking.setStatus(BookingStatus.PENDING);
+            log.info("Booking ID {} has expired payment. Resetting status to PENDING", booking.getId());
+        });
+
+        bookingRepository.saveAll(bookings);
+    }
+
 }

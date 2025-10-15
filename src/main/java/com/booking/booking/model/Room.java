@@ -1,6 +1,7 @@
 package com.booking.booking.model;
 
 import com.booking.booking.common.TypeRoom;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -14,8 +15,8 @@ import java.util.List;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"hotel", "bookings", "evaluates"})
+@ToString(exclude = {"hotel", "bookings", "evaluates"})
 @Table(name = "tbl_room")
 public class Room extends AbstractEntity<Long> implements Serializable {
 
@@ -34,28 +35,24 @@ public class Room extends AbstractEntity<Long> implements Serializable {
     @ElementCollection
     @CollectionTable(name = "room_images", joinColumns = @JoinColumn(name = "room_id"))
     @Column(name = "image_url")
-    @Builder.Default
     private List<String> listImageUrl = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "hotel_id", nullable = false)
-    @JsonIgnore
+    @JsonBackReference
     private Hotel hotel;
 
     @ManyToMany(mappedBy = "rooms")
-    @Builder.Default
     @JsonIgnore
     private List<Booking> bookings = new ArrayList<>();
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<Evaluate> evaluates = new ArrayList<>();
 
 
     @ElementCollection
     @CollectionTable(name = "room_services", joinColumns = @JoinColumn(name = "room_id"))
     @Column(name = "service")
-    @Builder.Default
     private List<String> services = new ArrayList<>();
 
 }

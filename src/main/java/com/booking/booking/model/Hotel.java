@@ -16,8 +16,8 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"rooms", "vouchers", "bookings", "staffs", "evaluates"})
+@ToString(exclude = {"rooms", "vouchers", "bookings", "staffs", "evaluates"})
 public class Hotel extends AbstractEntity<Long> implements Serializable {
 
     @Column(nullable = false)
@@ -32,29 +32,24 @@ public class Hotel extends AbstractEntity<Long> implements Serializable {
     private String hotline;
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    @Builder.Default
+    @JsonManagedReference
     private List<Room> rooms = new ArrayList<>();
 
     @OneToMany(mappedBy = "hotel")
     @JsonIgnore
-    @Builder.Default
     private Set<Voucher> vouchers = new HashSet<>();
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    @Builder.Default
     private List<Booking> bookings = new ArrayList<>();
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("staff-hotel")
-    @Builder.Default
     private List<User> staffs = new ArrayList<>();
 
     @ElementCollection
     @CollectionTable(name = "hotel_services", joinColumns = @JoinColumn(name = "hotel_id"))
     @Column(name = "service")
-    @Builder.Default
     private List<String> services = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

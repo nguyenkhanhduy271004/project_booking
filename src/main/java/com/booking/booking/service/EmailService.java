@@ -16,6 +16,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -49,7 +50,7 @@ public class EmailService {
         String secretCode = UUID.randomUUID().toString();
         String fullLink = verificationLink + "?secretCode=" + secretCode;
 
-        redisService.setWithTTL(secretCode, username, 5);
+        redisService.setWithTTL(secretCode, username, Duration.ofMinutes(5));
 
         Context context = new Context();
         context.setVariable("name", username);

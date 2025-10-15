@@ -86,4 +86,33 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
     @Query("SELECT r FROM Room r WHERE r.id IN :roomIds")
     List<Room> lockRoomsForUpdate(@Param("roomIds") List<Long> roomIds);
 
+    @Query("""
+                SELECT r FROM Room r
+                JOIN FETCH r.hotel h
+                WHERE r.available = true
+                AND r.capacity >= :numberOfGuests
+                AND (r.holdExpiresAt IS NULL OR r.holdExpiresAt < CURRENT_TIMESTAMP)
+                AND (
+                    :keyword IS NULL OR LOWER(h.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    OR LOWER(h.district) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    OR LOWER(h.province) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
+                AND NOT EXISTS (
+                    SELECT b FROM Booking b
+                    JOIN b.rooms br
+                    WHERE br.id = r.id
+                    AND b.status NOT IN ('CANCELLED', 'FAILED')
+                    AND (
+                        b.checkInDate < :checkOut AND b.checkOutDate > :checkIn
+                    )
+                )
+            """)
+    List<Room> findAvailableRooms(
+            @Param("keyword") String keyword,
+            @Param("numberOfGuests") int numberOfGuests,
+            @Param("checkIn") LocalDate checkIn,
+            @Param("checkOut") LocalDate checkOut
+    );
+
+
 }

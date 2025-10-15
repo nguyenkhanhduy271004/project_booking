@@ -113,37 +113,37 @@ public class AIChatController {
 
 
 
-    @PostMapping("/refresh")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> refreshData() {
-        try {
-            chatService.refreshAllHotelData();
-            return ResponseEntity.ok(Map.of(
-                    "message", "Đã làm mới dữ liệu thành công",
-                    "timestamp", Instant.now().toString()
-            ));
-        } catch (Exception e) {
-            log.error("Lỗi khi làm mới dữ liệu", e);
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("error", "Lỗi khi làm mới dữ liệu"));
-        }
-    }
+    //    @PostMapping("/refresh")
+    //    @PreAuthorize("hasRole('ADMIN')")
+    //    public ResponseEntity<Map<String, String>> refreshData() {
+    //        try {
+    //            chatService.refreshAllHotelData();
+    //            return ResponseEntity.ok(Map.of(
+    //                    "message", "Đã làm mới dữ liệu thành công",
+    //                    "timestamp", Instant.now().toString()
+    //            ));
+    //        } catch (Exception e) {
+    //            log.error("Lỗi khi làm mới dữ liệu", e);
+    //            return ResponseEntity.internalServerError()
+    //                    .body(Map.of("error", "Lỗi khi làm mới dữ liệu"));
+    //        }
+    //    }
 
-    @PostMapping("/refresh/{hotelId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> refreshHotelData(@PathVariable Long hotelId) {
-        try {
-            chatService.refreshHotelData(hotelId);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Đã làm mới dữ liệu khách sạn ID: " + hotelId,
-                    "timestamp", Instant.now().toString()
-            ));
-        } catch (Exception e) {
-            log.error("Lỗi khi làm mới dữ liệu khách sạn {}", hotelId, e);
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("error", "Lỗi khi làm mới dữ liệu khách sạn"));
-        }
-    }
+//    @PostMapping("/refresh/{hotelId}")
+//    @PreAuthorize("hasRole('ADMIN')")
+//    public ResponseEntity<Map<String, String>> refreshHotelData(@PathVariable Long hotelId) {
+//        try {
+//            chatService.refreshHotelData(hotelId);
+//            return ResponseEntity.ok(Map.of(
+//                    "message", "Đã làm mới dữ liệu khách sạn ID: " + hotelId,
+//                    "timestamp", Instant.now().toString()
+//            ));
+//        } catch (Exception e) {
+//            log.error("Lỗi khi làm mới dữ liệu khách sạn {}", hotelId, e);
+//            return ResponseEntity.internalServerError()
+//                    .body(Map.of("error", "Lỗi khi làm mới dữ liệu khách sạn"));
+//        }
+//    }
 
     public static class ChatRequest {
         private String question;
